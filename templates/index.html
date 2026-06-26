@@ -3,99 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Account Gen</title>
+    <title>Premium Account Generation Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .section-header { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; letter-spacing: -0.04em; }
+        
+        .glass {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .neon-text {
+            text-shadow: 0 0 10px rgb(244 63 94 / 0.5);
+        }
+
+        .stat-number {
+            font-variant-numeric: tabular-nums;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fancy-card {
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), 
+                        box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .fancy-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+        }
+
+        .link-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .link-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+    </style>
 </head>
-<body class="bg-zinc-950 text-white">
-    <div class="max-w-6xl mx-auto p-6">
-        <div class="flex justify-between items-center mb-8">
+<body class="bg-[#020617] text-slate-200">
+    <div class="max-w-screen-xl mx-auto px-6 py-10">
+        <!-- Header -->
+        <div class="flex items-end justify-between mb-12">
             <div>
-                <h1 class="text-4xl font-bold text-pink-500">Premium Account Gen</h1>
-                <p class="text-zinc-400">Select a service and generate premium links</p>
-            </div>
-            <div class="flex gap-6 text-sm">
-                <div>
-                    <span class="text-zinc-400">Total Accounts</span>
-                    <span id="total" class="block text-2xl font-bold">0</span>
+                <div class="inline-flex items-center gap-x-3 mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
+                        <i class="fa-solid fa-gem text-white text-3xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="section-header text-6xl tracking-tighter">Premium Account<br>Generation Platform</h1>
+                    </div>
                 </div>
-                <div>
-                    <span class="text-zinc-400">Active</span>
-                    <span id="active" class="block text-2xl font-bold text-green-400">0</span>
+                <p class="text-xl text-slate-400 max-w-md">Enterprise-grade access to premium streaming services through validated credentials.</p>
+            </div>
+
+            <!-- Live Stats with Animation -->
+            <div class="glass rounded-3xl p-8 border border-slate-700/50">
+                <div class="flex gap-x-10">
+                    <div>
+                        <div class="text-xs tracking-[2px] text-slate-500 mb-1">TOTAL ACCOUNTS</div>
+                        <div id="total-accounts" class="stat-number text-7xl font-semibold tabular-nums">0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs tracking-[2px] text-slate-500 mb-1">ACTIVE &amp; VALIDATED</div>
+                        <div id="active-accounts" class="stat-number text-7xl font-semibold text-emerald-400 tabular-nums">0</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex gap-4 mb-8">
-            <button onclick="switchTab(0)" class="tab-btn active px-8 py-3 rounded-full bg-white text-black font-medium">Netflix</button>
-        </div>
-
-        <!-- Netflix Panel -->
-        <div id="netflix-panel" class="bg-zinc-900 rounded-3xl p-8">
-            <div class="flex items-center gap-4 mb-6">
-                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
-                    <i class="fa-brands fa-netflix text-3xl"></i>
+        <!-- Netflix Section -->
+        <div class="max-w-2xl">
+            <div class="glass rounded-3xl p-10 border border-slate-700/50 fancy-card">
+                <div class="flex items-center gap-x-4 mb-8">
+                    <div class="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center">
+                        <i class="fa-brands fa-netflix text-white text-4xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-semibold tracking-tight">Netflix Premium Access</div>
+                        <div class="text-emerald-400 flex items-center gap-x-2 text-sm mt-1">
+                            <i class="fa-solid fa-check-circle"></i>
+                            <span>System ready — All credentials pre-validated</span>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <h2 class="text-2xl font-semibold">Netflix Account Info</h2>
-                    <p class="text-green-400 text-sm">✅ Ready to generate</p>
+
+                <button onclick="generateAccount()" 
+                        class="w-full py-6 bg-white text-black rounded-2xl font-semibold text-xl flex items-center justify-center gap-x-3 hover:bg-zinc-100 active:scale-[0.985] transition-all">
+                    <i class="fa-solid fa-sync-alt"></i>
+                    <span>Generate New Premium Session</span>
+                </button>
+
+                <!-- Link Selection -->
+                <div id="link-selection" class="hidden mt-8">
+                    <div class="text-sm text-slate-400 mb-4 tracking-widest">SELECT YOUR PREFERRED PLATFORM</div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <a id="pc-link" href="#" target="_blank"
+                           class="link-btn flex flex-col items-center justify-center gap-y-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl p-6 text-center">
+                            <i class="fa-solid fa-desktop text-3xl text-blue-400"></i>
+                            <div>
+                                <div class="font-semibold">Desktop / PC</div>
+                                <div class="text-xs text-slate-400">Chrome • Edge • Firefox</div>
+                            </div>
+                        </a>
+                        
+                        <a id="mobile-link" href="#" target="_blank"
+                           class="link-btn flex flex-col items-center justify-center gap-y-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl p-6 text-center">
+                            <i class="fa-solid fa-mobile-screen-button text-3xl text-purple-400"></i>
+                            <div>
+                                <div class="font-semibold">Mobile</div>
+                                <div class="text-xs text-slate-400">iOS • Android</div>
+                            </div>
+                        </a>
+                        
+                        <a id="tv-link" href="#" target="_blank"
+                           class="link-btn flex flex-col items-center justify-center gap-y-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl p-6 text-center">
+                            <i class="fa-solid fa-tv text-3xl text-orange-400"></i>
+                            <div>
+                                <div class="font-semibold">Smart TV / Console</div>
+                                <div class="text-xs text-slate-400">Any browser-supported device</div>
+                            </div>
+                        </a>
+                    </div>
                 </div>
             </div>
-
-            <button onclick="generateAccount()" 
-                    class="w-full bg-zinc-800 hover:bg-zinc-700 py-5 rounded-2xl text-lg font-medium flex items-center justify-center gap-3">
-                <i class="fa-solid fa-sync"></i>
-                Generate Another
-            </button>
-
-            <div id="result" class="mt-6 hidden"></div>
         </div>
     </div>
 
     <script>
+        function animateCounter(element, target) {
+            let current = 0;
+            const increment = Math.ceil(target / 60);
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = current;
+                }
+            }, 30);
+        }
+
         async function loadStats() {
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
-                document.getElementById('total').textContent = data.total;
-                document.getElementById('active').textContent = data.active;
+                
+                const totalEl = document.getElementById('total-accounts');
+                const activeEl = document.getElementById('active-accounts');
+                
+                animateCounter(totalEl, data.total);
+                animateCounter(activeEl, data.active);
             } catch(e) {}
         }
 
         async function generateAccount() {
-            const resultDiv = document.getElementById('result');
-            resultDiv.classList.add('hidden');
+            const btn = event.currentTarget;
+            const selection = document.getElementById('link-selection');
+            selection.classList.add('hidden');
 
             try {
                 const res = await fetch('/api/generate');
                 const data = await res.json();
 
                 if (data.success) {
-                    resultDiv.innerHTML = `
-                        <div class="bg-green-900/30 border border-green-500 rounded-2xl p-6">
-                            <p class="text-green-400 mb-4">✅ Generated successfully!</p>
-                            <a href="${data.pc_link}" target="_blank" 
-                               class="block bg-green-600 hover:bg-green-700 text-center py-4 rounded-xl font-medium">
-                                Open Netflix Link
-                            </a>
-                        </div>`;
-                    resultDiv.classList.remove('hidden');
+                    // Show fancy link selection
+                    document.getElementById('pc-link').href = data.pc_link;
+                    document.getElementById('mobile-link').href = data.mobile_link;
+                    document.getElementById('tv-link').href = data.tv_link;
+                    
+                    selection.classList.remove('hidden');
+                    selection.classList.add('fade-in');
+                    
                     loadStats();
                 } else {
-                    alert(data.error || "Failed to generate");
+                    alert(data.error || "All current credentials have expired. Please add new validated cookies via the admin panel.");
                 }
             } catch(e) {
-                alert("Network error");
+                alert("Connection error. Please try again.");
             }
         }
 
-        function switchTab(n) {
-            // For future services
-        }
-
-        // Load stats on start
-        setInterval(loadStats, 10000);
-        loadStats();
+        // Auto refresh stats
+        setInterval(loadStats, 15000);
+        window.onload = loadStats;
     </script>
 </body>
 </html>
