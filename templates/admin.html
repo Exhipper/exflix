@@ -69,23 +69,7 @@
                                   placeholder="Paste Netscape format, JSON, or raw NetflixId=... here"></textarea>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-2">Plan</label>
-                            <select id="plan" class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-4 py-3 text-sm">
-                                <option>Premium</option>
-                                <option>Standard</option>
-                                <option>Basic</option>
-                                <option>Standard with Ads</option>
-                                <option>Premium (Extra Member)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-2">Country</label>
-                            <input type="text" id="country" value="US" maxlength="3"
-                                   class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-4 py-3 text-sm font-mono uppercase">
-                        </div>
-                    </div>
+                    <!-- Plan and Country removed as requested -->
 
                     <button type="submit"
                             class="w-full flex justify-center items-center gap-x-3 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 transition-colors text-white font-semibold py-4 rounded-2xl text-base">
@@ -199,9 +183,7 @@
 
             const payload = {
                 admin_pass: document.getElementById('admin_pass').value,
-                cookie_text: document.getElementById('cookie_text').value.trim(),
-                plan: document.getElementById('plan').value,
-                country: document.getElementById('country').value.toUpperCase()
+                cookie_text: document.getElementById('cookie_text').value.trim()
             };
 
             try {
