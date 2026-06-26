@@ -4,12 +4,15 @@ from psycopg2.extras import RealDictCursor
 import requests
 import os
 import re
+from urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "super-secret-key-change-in-production")
 
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")   # Better to use env var
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ====================== IMPROVED COOKIE PARSER ======================
@@ -19,7 +22,7 @@ def extract_netflix_id(cookie_text):
         return None
     cookie_text = cookie_text.strip()
 
-    # 1. NetflixId=ct%3D... (your main format)
+    # 1. NetflixId=ct%3D... (main format)
     match = re.search(r'NetflixId\s*[:=]\s*([^\s;]+)', cookie_text, re.IGNORECASE)
     if match:
         return match.group(1)
@@ -29,12 +32,12 @@ def extract_netflix_id(cookie_text):
     if match:
         return match.group(1)
 
-    # 3. Long encoded ct%3D... fallback
+    # 3. Long encoded ct%3D...
     match = re.search(r'(ct%3D[A-Za-z0-9%._-]+)', cookie_text)
     if match:
         return match.group(1)
 
-    # 4. Last resort - any very long string containing Netflix patterns
+    # 4. Last resort
     match = re.search(r'([A-Za-z0-9%]{150,})', cookie_text)
     if match and ('ct%3D' in match.group(1) or 'NetflixId' in cookie_text):
         return match.group(1)
@@ -42,6 +45,7 @@ def extract_netflix_id(cookie_text):
     return None
 
 
+# ====================== IMPROVED NFT TOKEN FETCHER ======================
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
@@ -49,26 +53,73 @@ def fetch_nftoken(cookie_text):
 
     headers = {
         "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
+        "x-netflix.request.attempt": "1",
+        "x-netflix.request.client.user.guid": "A4CS633D7VCBPE2GPK2HL4EKOE",
+        "x-netflix.context.profile-guid": "A4CS633D7VCBPE2GPK2HL4EKOE",
+        "x-netflix.request.routing": '{"path":"/nq/mobile/nqios/~15.48.0/user","control_tag":"iosui_argo"}',
+        "x-netflix.context.app-version": "15.48.1",
+        "x-netflix.argo.translated": "true",
+        "x-netflix.context.form-factor": "phone",
+        "x-netflix.context.sdk-version": "2012.4",
+        "x-netflix.client.appversion": "15.48.1",
+        "x-netflix.context.max-device-width": "375",
+        "x-netflix.tracing.cl.useractionid": "4DC655F2-9C3C-4343-8229-CA1B003C3053",
+        "x-netflix.client.type": "argo",
+        "x-netflix.client.ftl.esn": "NFAPPL-02-IPHONE8=1-PXA-02026U9VV5O8AUKEAEO8PUJETCGDD4PQRI9DEB3MDLEMD0EACM4CS78LMD334MN3MQ3NMJ8SU9O9MVGS6BJCURM1PH1MUTGDPF4S4200",
+        "accept-language": "en-US;q=1",
+        "x-netflix.request.client.context": '{"appState":"foreground"}',
         "Cookie": f"NetflixId={netflix_id}",
     }
-    params = {"path": '["account","token","default"]', "responseFormat": "json"}
+
+    params = {
+        "appVersion": "15.48.1",
+        "device_type": "NFAPPL-02-",
+        "esn": "NFAPPL-02-IPHONE8%3D1-PXA-02026U9VV5O8AUKEAEO8PUJETCGDD4PQRI9DEB3MDLEMD0EACM4CS78LMD334MN3MQ3NMJ8SU9O9MVGS6BJCURM1PH1MUTGDPF4S4200",
+        "idiom": "phone",
+        "iosVersion": "15.8.5",
+        "isTablet": "false",
+        "languages": "en-US",
+        "locale": "en-US",
+        "maxDeviceWidth": "375",
+        "model": "saget",
+        "modelType": "IPHONE8-1",
+        "odpAware": "true",
+        "path": '["account","token","default"]',
+        "pathFormat": "graph",
+        "pixelDensity": "2.0",
+        "progressive": "false",
+        "responseFormat": "json",
+    }
 
     try:
         r = requests.get(
             "https://ios.prod.ftl.netflix.com/iosui/user/15.48",
             params=params,
             headers=headers,
-            timeout=25,
+            timeout=30,
             verify=False
         )
-        data = r.json()
-        token = data.get("value", {}).get("account", {}).get("token", {}).get("default", {}).get("token")
         
+        print(f"Netflix Status: {r.status_code}")  # Helpful for Render logs
+        
+        if r.status_code != 200:
+            return None, f"Netflix API error {r.status_code}: {r.text[:300]}"
+
+        data = r.json()
+        token_path = (
+            (((data.get("value") or {}).get("account") or {}).get("token") or {}).get("default")
+            or {}
+        )
+        token = token_path.get("token")
+
         if token:
             return token, None
         return None, "Failed to generate NFToken (cookie may be expired or invalid)"
+
+    except requests.exceptions.RequestException as e:
+        return None, f"Request error: {str(e)[:150]}"
     except Exception as e:
-        return None, f"Network error: {str(e)[:100]}"
+        return None, f"Unexpected error: {str(e)[:150]}"
 
 
 # ====================== DATABASE ======================
@@ -95,10 +146,12 @@ def init_db():
 
 init_db()
 
+
 # ====================== ROUTES ======================
 @app.route("/")
 def dashboard():
     return render_template("index.html")
+
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin_page():
@@ -110,6 +163,7 @@ def admin_page():
         else:
             return render_template("admin_login.html", error="Invalid credentials")
     return render_template("admin_login.html")
+
 
 @app.route("/api/add_account", methods=["POST"])
 def add_account():
@@ -139,6 +193,7 @@ def add_account():
         return jsonify({"success": True, "message": "✅ Account validated and added successfully!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route("/api/generate")
 def generate_account():
@@ -183,6 +238,7 @@ def generate_account():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+
 @app.route("/api/stats")
 def stats():
     try:
@@ -195,6 +251,7 @@ def stats():
         return jsonify({"total": row["total"] or 0, "active": row["active"] or 0})
     except:
         return jsonify({"total": 0, "active": 0})
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
