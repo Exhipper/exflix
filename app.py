@@ -9,36 +9,43 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "super-secret-key-change-in-production")
 
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")   # Better to use env var
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ====================== IMPROVED COOKIE PARSER ======================
 def extract_netflix_id(cookie_text):
-    """Strong extractor for harshitkamboj Netflix cookie checker format"""
+    """Robust extractor for all Netflix cookie formats"""
     if not cookie_text:
         return None
-    
-    # 1. Netscape format - most common
-    match = re.search(r'NetflixId\s+([^\s]+)', cookie_text)
+    cookie_text = cookie_text.strip()
+
+    # 1. NetflixId=ct%3D... (your main format)
+    match = re.search(r'NetflixId\s*[:=]\s*([^\s;]+)', cookie_text, re.IGNORECASE)
     if match:
         return match.group(1)
-    
-    # 2. Direct key=value format
-    match = re.search(r'NetflixId=([^;,\s]+)', cookie_text)
+
+    # 2. Netscape format
+    match = re.search(r'netflix\.com\s+TRUE\s+/\s+FALSE\s+\d+\s+NetflixId\s+([^\s]+)', cookie_text, re.IGNORECASE)
     if match:
         return match.group(1)
-    
-    # 3. Long encoded value (fallback)
-    match = re.search(r'NetflixId[\t\s:=]+([a-zA-Z0-9%_.-]+)', cookie_text)
+
+    # 3. Long encoded ct%3D... fallback
+    match = re.search(r'(ct%3D[A-Za-z0-9%._-]+)', cookie_text)
     if match:
         return match.group(1)
-    
+
+    # 4. Last resort - any very long string containing Netflix patterns
+    match = re.search(r'([A-Za-z0-9%]{150,})', cookie_text)
+    if match and ('ct%3D' in match.group(1) or 'NetflixId' in cookie_text):
+        return match.group(1)
+
     return None
+
 
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "Could not find NetflixId in the cookie"
+        return None, f"Could not find NetflixId in the cookie. Length: {len(cookie_text)}"
 
     headers = {
         "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
@@ -59,9 +66,10 @@ def fetch_nftoken(cookie_text):
         
         if token:
             return token, None
-        return None, "Failed to generate NFToken (cookie may be expired)"
+        return None, "Failed to generate NFToken (cookie may be expired or invalid)"
     except Exception as e:
         return None, f"Network error: {str(e)[:100]}"
+
 
 # ====================== DATABASE ======================
 def get_db():
@@ -107,7 +115,7 @@ def admin_page():
 def add_account():
     try:
         data = request.get_json(silent=True) or request.form.to_dict()
-        cookie_text = (data.get("cookie_text") or "").strip()
+        cookie_text = (data.get("cookie_text") or data.get("netflix_cookie") or "").strip()
 
         if not cookie_text:
             return jsonify({"success": False, "error": "Cookie is empty"}), 400
