@@ -31,7 +31,7 @@ def extract_netflix_id(cookie_text):
         return match.group(1)
     return None
 
-# ====================== FIXED NFT TOKEN FETCHER ======================
+# ====================== FIXED NFT TOKEN ======================
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
@@ -69,7 +69,7 @@ def fetch_nftoken(cookie_text):
         )
         
         print(f"🔍 Netflix Token Status: {r.status_code}")
-        
+
         if r.status_code != 200:
             return None, f"Netflix API error {r.status_code}"
 
@@ -79,7 +79,7 @@ def fetch_nftoken(cookie_text):
 
         if token and isinstance(token, str) and len(token) > 100:
             return token, None
-        return None, "Failed to generate valid NFToken"
+        return None, "Failed to generate NFToken"
 
     except Exception as e:
         logging.error(f"Token error: {e}")
