@@ -12,24 +12,24 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# ====================== ROBUST COOKIE PARSER ======================
+# ====================== BETTER COOKIE PARSER ======================
 def extract_netflix_id(cookie_text):
-    """Extract NetflixId from harshitkamboj checker format"""
+    """Strong extractor for harshitkamboj checker output"""
     if not cookie_text:
         return None
     
-    # 1. Netscape TSV format - most common in your files
-    match = re.search(r'NetflixId\s+([^\s]+)', cookie_text, re.IGNORECASE)
+    # 1. Look for NetflixId line in Netscape format
+    match = re.search(r'NetflixId\s+([^\s]+)', cookie_text)
     if match:
         return match.group(1)
     
-    # 2. Direct key=value
+    # 2. Direct = format
     match = re.search(r'NetflixId=([^;,\s]+)', cookie_text)
     if match:
         return match.group(1)
     
-    # 3. Quoted value
-    match = re.search(r'["\']?NetflixId["\']?\s*[:=]\s*["\']?([^"\',\s]+)', cookie_text)
+    # 3. Last resort - long base64-like string after NetflixId
+    match = re.search(r'NetflixId[\t\s]+([a-zA-Z0-9%._-]+)', cookie_text)
     if match:
         return match.group(1)
     
@@ -38,7 +38,7 @@ def extract_netflix_id(cookie_text):
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "Could not find NetflixId in cookie file"
+        return None, "NetflixId not found in the provided cookie"
 
     headers = {
         "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
@@ -59,11 +59,11 @@ def fetch_nftoken(cookie_text):
         
         if token:
             return token, None
-        return None, "Failed to generate NFToken (possibly expired)"
+        return None, "Failed to generate NFToken (cookie may be expired)"
     except Exception as e:
-        return None, f"Network error: {str(e)[:100]}"
+        return None, f"Network error: {str(e)[:80]}"
 
-# ====================== DATABASE ======================
+# ====================== DATABASE & ROUTES ======================
 def get_db():
     return psycopg2.connect(DATABASE_URL)
 
@@ -87,7 +87,6 @@ def init_db():
 
 init_db()
 
-# ====================== ROUTES ======================
 @app.route("/")
 def dashboard():
     return render_template("index.html")
@@ -154,11 +153,7 @@ def generate_account():
             conn.commit()
             return jsonify({"success": False, "error": "Account expired. Try again."}), 400
 
-        cur.execute("""
-            UPDATE netflix_accounts 
-            SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
-            WHERE id = %s
-        """, (account['id'],))
+        cur.execute("UPDATE netflix_accounts SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 WHERE id = %s", (account['id'],))
         conn.commit()
 
         link = f"https://www.netflix.com/?nftoken={token}"
