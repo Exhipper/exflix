@@ -3,48 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login • Premium Account Gen</title>
+    <title>SECURE ACCESS • ADMIN PANEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background: #020617; }
+        .header-font { font-family: 'Space Grotesk', sans-serif; }
+        .mono { font-family: 'VT323', monospace; }
+
+        .glass { 
+            background: rgba(15, 23, 42, 0.85); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(236, 72, 153, 0.25); 
+        }
+        .neon-border { box-shadow: 0 0 25px #f472b6, 0 0 45px #db2777; }
+
+        .scanline::after {
+            content: '';
+            position: absolute;
+            top: -100%; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(transparent, rgba(236, 72, 153, 0.12), transparent);
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(500%); }
+        }
+    </style>
 </head>
-<body class="bg-[#020617] text-slate-200 min-h-screen flex items-center justify-center">
-    <div class="max-w-md w-full px-6">
-        <div class="text-center mb-10">
-            <div class="mx-auto w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6">
-                <i class="fa-solid fa-shield-halved text-white text-3xl"></i>
+<body class="text-slate-200 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-auto px-6">
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center gap-3 mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl flex items-center justify-center neon-border">
+                    <i class="fa-solid fa-shield-halved text-white text-4xl"></i>
+                </div>
             </div>
-            <h1 class="text-3xl font-bold tracking-tight">Admin Login</h1>
-            <p class="text-slate-400 mt-2">Access account management</p>
+            <h1 class="header-font text-5xl font-bold tracking-tighter glow-pink">ADMIN ACCESS</h1>
+            <p class="text-slate-400 mono mt-2">AUTHORIZATION REQUIRED</p>
         </div>
 
-        <div class="bg-[#0f172a] border border-slate-700 rounded-3xl p-8">
+        <div class="glass rounded-3xl p-10 neon-border scanline">
+            <form method="POST" class="space-y-8">
+                <div>
+                    <label class="block text-xs tracking-widest text-slate-400 mb-2">USERNAME</label>
+                    <input type="text" name="username" required
+                           class="w-full bg-black/70 border border-slate-700 rounded-2xl px-6 py-5 focus:border-pink-500 outline-none mono">
+                </div>
+                
+                <div>
+                    <label class="block text-xs tracking-widest text-slate-400 mb-2">PASSWORD</label>
+                    <input type="password" name="password" required
+                           class="w-full bg-black/70 border border-slate-700 rounded-2xl px-6 py-5 focus:border-pink-500 outline-none mono">
+                </div>
+
+                <button type="submit"
+                    class="w-full py-6 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 rounded-2xl font-bold text-xl transition-all active:scale-95">
+                    AUTHENTICATE
+                </button>
+            </form>
+
             {% if error %}
-            <div class="mb-6 p-4 bg-red-900/30 border border-red-700 text-red-300 rounded-2xl text-sm">
+            <div class="mt-6 p-4 bg-red-900/30 border border-red-500 rounded-2xl text-red-400 text-center">
                 {{ error }}
             </div>
             {% endif %}
-
-            <form method="POST" class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-2">Username</label>
-                    <input type="text" name="username" required autocomplete="off"
-                           class="w-full bg-slate-900 border border-slate-700 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-2">Password</label>
-                    <input type="password" name="password" required autocomplete="off"
-                           class="w-full bg-slate-900 border border-slate-700 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm">
-                </div>
-                <button type="submit"
-                        class="w-full bg-rose-600 hover:bg-rose-500 py-4 rounded-2xl font-semibold text-white transition-colors">
-                    Login to Admin Panel
-                </button>
-            </form>
         </div>
 
-        <div class="text-center mt-8 text-xs text-slate-500">
-            Default credentials: <strong>admin / admin</strong>
+        <div class="text-center text-xs text-slate-500 mt-10 mono">
+            SECURE ACCESS PROTOCOL v2.1 • AUTHORIZED PERSONNEL ONLY
         </div>
     </div>
+
+    <script>
+        // Optional: Add subtle animation on load
+        document.querySelector('form').classList.add('animate-pulse');
+        setTimeout(() => {
+            document.querySelector('form').classList.remove('animate-pulse');
+        }, 800);
+    </script>
 </body>
 </html>
