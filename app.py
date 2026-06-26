@@ -5,6 +5,9 @@ import requests
 import os
 import re
 from urllib3.exceptions import InsecureRequestWarning
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
@@ -15,41 +18,31 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# ====================== IMPROVED COOKIE PARSER ======================
+# ====================== COOKIE PARSER ======================
 def extract_netflix_id(cookie_text):
-    """Robust extractor for all Netflix cookie formats"""
     if not cookie_text:
         return None
     cookie_text = cookie_text.strip()
 
-    # 1. NetflixId=ct%3D... (main format)
     match = re.search(r'NetflixId\s*[:=]\s*([^\s;]+)', cookie_text, re.IGNORECASE)
     if match:
         return match.group(1)
 
-    # 2. Netscape format
-    match = re.search(r'netflix\.com\s+TRUE\s+/\s+FALSE\s+\d+\s+NetflixId\s+([^\s]+)', cookie_text, re.IGNORECASE)
-    if match:
-        return match.group(1)
-
-    # 3. Long encoded ct%3D...
     match = re.search(r'(ct%3D[A-Za-z0-9%._-]+)', cookie_text)
     if match:
         return match.group(1)
 
-    # 4. Last resort
     match = re.search(r'([A-Za-z0-9%]{150,})', cookie_text)
-    if match and ('ct%3D' in match.group(1) or 'NetflixId' in cookie_text):
+    if match and 'ct%3D' in match.group(1):
         return match.group(1)
-
     return None
 
 
-# ====================== IMPROVED NFT TOKEN FETCHER ======================
+# ====================== NFT TOKEN FETCHER ======================
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, f"Could not find NetflixId in the cookie. Length: {len(cookie_text)}"
+        return None, f"Could not find NetflixId. Length: {len(cookie_text)}"
 
     headers = {
         "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
@@ -100,49 +93,50 @@ def fetch_nftoken(cookie_text):
             verify=False
         )
         
-        print(f"Netflix Status: {r.status_code}")  # Helpful for Render logs
+        print(f"Netflix Status: {r.status_code} | Response: {r.text[:300]}")
         
         if r.status_code != 200:
             return None, f"Netflix API error {r.status_code}: {r.text[:300]}"
 
         data = r.json()
-        token_path = (
-            (((data.get("value") or {}).get("account") or {}).get("token") or {}).get("default")
-            or {}
-        )
+        token_path = (((data.get("value") or {}).get("account") or {}).get("token") or {}).get("default") or {}
         token = token_path.get("token")
 
         if token:
             return token, None
-        return None, "Failed to generate NFToken (cookie may be expired or invalid)"
+        return None, "Failed to generate NFToken (cookie may be expired/invalid)"
 
-    except requests.exceptions.RequestException as e:
-        return None, f"Request error: {str(e)[:150]}"
     except Exception as e:
-        return None, f"Unexpected error: {str(e)[:150]}"
+        return None, f"Request error: {str(e)[:150]}"
 
 
 # ====================== DATABASE ======================
 def get_db():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not set")
     return psycopg2.connect(DATABASE_URL)
 
 def init_db():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS netflix_accounts (
-            id SERIAL PRIMARY KEY,
-            cookie_text TEXT NOT NULL UNIQUE,
-            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_used TIMESTAMP,
-            usage_count INTEGER DEFAULT 0,
-            is_active BOOLEAN DEFAULT TRUE
-        )
-    """)
-    conn.commit()
-    cur.close()
-    conn.close()
-    print("✅ Database initialized.")
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS netflix_accounts;")
+        cur.execute("""
+            CREATE TABLE netflix_accounts (
+                id SERIAL PRIMARY KEY,
+                cookie_text TEXT NOT NULL UNIQUE,
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_used TIMESTAMP,
+                usage_count INTEGER DEFAULT 0,
+                is_active BOOLEAN DEFAULT TRUE
+            )
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("✅ Database table recreated successfully.")
+    except Exception as e:
+        print(f"⚠️ DB init error: {e}")
 
 init_db()
 
@@ -183,14 +177,14 @@ def add_account():
         cur.execute("""
             INSERT INTO netflix_accounts (cookie_text, is_active)
             VALUES (%s, TRUE)
-            ON CONFLICT (cookie_text) DO UPDATE 
-            SET is_active = TRUE, added_at = CURRENT_TIMESTAMP
+            ON CONFLICT (cookie_text) 
+            DO UPDATE SET is_active = TRUE, added_at = CURRENT_TIMESTAMP
         """, (cookie_text,))
         conn.commit()
         cur.close()
         conn.close()
 
-        return jsonify({"success": True, "message": "✅ Account validated and added successfully!"})
+        return jsonify({"success": True, "message": "✅ Account validated and added!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
