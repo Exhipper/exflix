@@ -3,119 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Account Generation Platform</title>
+    <title>NETFLIX COOKIE VAULT • LIVE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap');
         
-        body { font-family: 'Inter', system_ui, sans-serif; }
-        .header-font { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.04em; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #020617;
+        }
+        .header-font { font-family: 'Space Grotesk', sans-serif; }
+        .mono { font-family: 'VT323', monospace; }
 
-        .glass {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(148, 163, 184, 0.1);
-        }
+        .glow-pink { text-shadow: 0 0 20px #f472b6, 0 0 40px #db2777; }
+        .glass { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(236, 72, 153, 0.2); }
 
-        .stat-number {
-            font-variant-numeric: tabular-nums;
+        .scanline {
+            position: relative;
         }
-
-        .fancy-card {
-            transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-        }
-        .fancy-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 30px 60px -15px rgb(244 63 94 / 0.3);
-        }
-
-        .link-btn {
-            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-        }
-        .link-btn:hover {
-            transform: scale(1.05) translateY(-4px);
+        .scanline::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(transparent, rgba(236, 72, 153, 0.08), transparent);
+            animation: scan 4s linear infinite;
+            pointer-events: none;
         }
 
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(400%); }
         }
-        .animate-in { animation: fadeInUp 0.6s ease forwards; }
+
+        .neon-border {
+            box-shadow: 0 0 15px #f472b6,
+                        0 0 30px #db2777;
+        }
     </style>
 </head>
-<body class="bg-[#020617] text-slate-200 min-h-screen">
-    <div class="max-w-6xl mx-auto px-6 py-12">
+<body class="text-slate-200 min-h-screen">
+    <div class="max-w-7xl mx-auto px-6 py-8">
         <!-- Header -->
-        <div class="flex justify-between items-start mb-16">
-            <div>
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-14 h-14 bg-gradient-to-br from-rose-500 via-pink-600 to-violet-600 rounded-3xl flex items-center justify-center shadow-xl">
-                        <i class="fa-solid fa-gem text-4xl text-white"></i>
-                    </div>
-                    <h1 class="header-font text-6xl font-bold tracking-tighter text-white">Premium Account Gen</h1>
+        <div class="flex justify-between items-center mb-10">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center neon-border">
+                    <i class="fa-solid fa-satellite-dish text-white text-2xl"></i>
                 </div>
-                <p class="text-xl text-slate-400 max-w-md">Enterprise-grade premium access with real-time validation and multi-platform delivery.</p>
+                <div>
+                    <h1 class="header-font text-5xl font-bold tracking-tighter glow-pink">NETFLIX COOKIE VAULT</h1>
+                    <p class="text-emerald-400 text-sm mono">GLOBAL ARCHIVE • LIVE FEED</p>
+                </div>
             </div>
-
-            <!-- Live Stats -->
-            <div class="glass rounded-3xl px-10 py-8 flex gap-12">
+            
+            <div class="flex gap-8 text-sm">
                 <div class="text-center">
-                    <div class="text-xs uppercase tracking-[3px] text-slate-400 mb-2">Total Accounts</div>
-                    <div id="total" class="stat-number text-6xl font-bold text-white">0</div>
+                    <div class="text-emerald-400 text-xs tracking-widest">TOTAL ACCOUNTS</div>
+                    <div id="total" class="text-4xl font-bold text-white">0</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-xs uppercase tracking-[3px] text-slate-400 mb-2">Active & Valid</div>
-                    <div id="active" class="stat-number text-6xl font-bold text-emerald-400">0</div>
+                    <div class="text-emerald-400 text-xs tracking-widest">ACTIVE</div>
+                    <div id="active" class="text-4xl font-bold text-emerald-400">0</div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Card -->
-        <div class="max-w-2xl mx-auto">
-            <div class="glass rounded-3xl p-12 fancy-card">
-                <div class="flex items-center gap-5 mb-10">
-                    <div class="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <i class="fa-brands fa-netflix text-5xl"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-4xl font-semibold header-font tracking-tight">Netflix Premium Access</h2>
-                        <p class="text-emerald-400 flex items-center gap-2 mt-2">
-                            <i class="fa-solid fa-circle-check"></i>
-                            <span class="font-medium">All accounts pre-validated • High success rate</span>
-                        </p>
-                    </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left: Validator -->
+            <div class="lg:col-span-5">
+                <div class="glass rounded-3xl p-8 neon-border scanline">
+                    <h2 class="text-2xl font-semibold mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-microchip text-pink-400"></i>
+                        COOKIE VALIDATOR
+                    </h2>
+                    <textarea id="cookie_input" rows="6" 
+                        class="w-full bg-black/60 border border-slate-700 rounded-2xl p-5 mono text-sm focus:border-pink-500"
+                        placeholder="Paste Netflix cookie here..."></textarea>
+                    
+                    <button onclick="validateCookie()" 
+                        class="mt-6 w-full py-5 bg-gradient-to-r from-pink-600 to-rose-600 rounded-2xl font-bold text-lg hover:brightness-110 transition-all">
+                        INITIATE VERIFICATION
+                    </button>
+
+                    <div id="validator-result" class="mt-6 min-h-[100px]"></div>
                 </div>
+            </div>
 
-                <button onclick="generateAccount()" 
-                        class="w-full py-7 bg-white text-black rounded-2xl text-xl font-semibold flex items-center justify-center gap-4 hover:bg-slate-100 active:scale-95 transition-all shadow-xl">
-                    <i class="fa-solid fa-bolt"></i>
-                    GENERATE NEW PREMIUM SESSION
-                </button>
+            <!-- Right: Dashboard + Generate -->
+            <div class="lg:col-span-7">
+                <div class="glass rounded-3xl p-8 h-full neon-border">
+                    <div class="flex justify-between items-center mb-8">
+                        <div class="text-xl font-semibold">LIVE SESSION GENERATOR</div>
+                        <div class="px-4 py-1 bg-emerald-900/50 text-emerald-400 text-xs rounded-full mono">SYSTEM ONLINE</div>
+                    </div>
 
-                <!-- Link Selection -->
-                <div id="link-selection" class="hidden mt-10 animate-in">
-                    <p class="text-slate-400 text-sm tracking-widest mb-6">CHOOSE YOUR PLATFORM</p>
-                    <div class="grid grid-cols-3 gap-6">
-                        <a id="pc-link" href="#" target="_blank" 
-                           class="link-btn group glass rounded-2xl p-8 text-center border border-slate-700 hover:border-blue-500">
-                            <i class="fa-solid fa-desktop text-4xl text-blue-400 mb-4"></i>
+                    <button onclick="generateAccount()" 
+                        class="w-full py-8 text-2xl font-bold bg-white text-black rounded-3xl hover:bg-slate-100 transition-all active:scale-95 mb-8">
+                        GENERATE PREMIUM SESSION
+                    </button>
+
+                    <div id="link-selection" class="hidden grid grid-cols-3 gap-4">
+                        <a id="pc-link" href="#" target="_blank" class="group bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-blue-500 rounded-2xl p-6 text-center transition-all">
+                            <i class="fa-solid fa-desktop text-4xl mb-4 text-blue-400"></i>
                             <div class="font-semibold">PC / Desktop</div>
-                            <div class="text-xs text-slate-400">Chrome, Firefox, Edge</div>
                         </a>
-                        
-                        <a id="mobile-link" href="#" target="_blank"
-                           class="link-btn group glass rounded-2xl p-8 text-center border border-slate-700 hover:border-purple-500">
-                            <i class="fa-solid fa-mobile-screen text-4xl text-purple-400 mb-4"></i>
+                        <a id="mobile-link" href="#" target="_blank" class="group bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-purple-500 rounded-2xl p-6 text-center transition-all">
+                            <i class="fa-solid fa-mobile-screen text-4xl mb-4 text-purple-400"></i>
                             <div class="font-semibold">Mobile</div>
-                            <div class="text-xs text-slate-400">iOS & Android</div>
                         </a>
-                        
-                        <a id="tv-link" href="#" target="_blank"
-                           class="link-btn group glass rounded-2xl p-8 text-center border border-slate-700 hover:border-orange-500">
-                            <i class="fa-solid fa-tv text-4xl text-orange-400 mb-4"></i>
-                            <div class="font-semibold">Smart TV</div>
-                            <div class="text-xs text-slate-400">TV • Console • Browser</div>
+                        <a id="tv-link" href="#" target="_blank" class="group bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-orange-500 rounded-2xl p-6 text-center transition-all">
+                            <i class="fa-solid fa-tv text-4xl mb-4 text-orange-400"></i>
+                            <div class="font-semibold">TV / Console</div>
                         </a>
                     </div>
                 </div>
@@ -128,13 +126,40 @@
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
-                
-                const totalEl = document.getElementById('total');
-                const activeEl = document.getElementById('active');
-                
-                totalEl.textContent = data.total;
-                activeEl.textContent = data.active;
+                document.getElementById('total').textContent = data.total;
+                document.getElementById('active').textContent = data.active;
             } catch(e) {}
+        }
+
+        async function validateCookie() {
+            const input = document.getElementById('cookie_input').value.trim();
+            const resultDiv = document.getElementById('validator-result');
+
+            if (!input) return;
+
+            resultDiv.innerHTML = `<div class="text-pink-400 flex items-center gap-3"><i class="fa-solid fa-spinner fa-spin"></i> Analyzing cookie...</div>`;
+
+            try {
+                const res = await fetch('/api/add_account', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({cookie_text: input})
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="bg-emerald-900/30 border border-emerald-500 rounded-2xl p-6 text-emerald-400">
+                            <i class="fa-solid fa-check-circle text-3xl mb-3"></i>
+                            <p class="font-bold">VALIDATION SUCCESSFUL</p>
+                            <p class="text-sm mt-2">${data.message || 'Account added to vault'}</p>
+                        </div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="text-red-400">❌ ${data.error}</div>`;
+                }
+            } catch(e) {
+                resultDiv.innerHTML = `<div class="text-red-400">Network error</div>`;
+            }
         }
 
         async function generateAccount() {
@@ -149,19 +174,14 @@
                     document.getElementById('pc-link').href = data.pc_link;
                     document.getElementById('mobile-link').href = data.mobile_link;
                     document.getElementById('tv-link').href = data.tv_link;
-                    
                     selection.classList.remove('hidden');
-                    loadStats();
                 } else {
-                    alert(data.error || "No active accounts available. Please add new cookies.");
+                    alert(data.error);
                 }
-            } catch (err) {
-                alert("Connection error. Please try again.");
-            }
+            } catch(e) {}
         }
 
-        // Auto refresh stats
-        setInterval(loadStats, 12000);
+        setInterval(loadStats, 8000);
         window.onload = loadStats;
     </script>
 </body>
