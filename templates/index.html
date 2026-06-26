@@ -5,38 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Premium Account Gen</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body class="bg-zinc-950 text-white">
-    <div class="max-w-4xl mx-auto p-6">
-        <h1 class="text-4xl font-bold text-pink-500 mb-2">Premium Account Gen</h1>
-        <p class="text-zinc-400 mb-8">Select a service and generate premium links</p>
-
-        <div class="flex gap-4 mb-8">
-            <button onclick="switchTab(0)" class="tab-btn active px-6 py-2 rounded-full bg-white text-black">Netflix</button>
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-pink-500">Premium Account Gen</h1>
+                <p class="text-zinc-400">Select a service and generate premium links</p>
+            </div>
+            <div class="flex gap-6 text-sm">
+                <div>
+                    <span class="text-zinc-400">Total Accounts</span>
+                    <span id="total" class="block text-2xl font-bold">0</span>
+                </div>
+                <div>
+                    <span class="text-zinc-400">Active</span>
+                    <span id="active" class="block text-2xl font-bold text-green-400">0</span>
+                </div>
+            </div>
         </div>
 
-        <div id="netflix-panel">
-            <div class="bg-zinc-900 rounded-3xl p-8">
-                <h2 class="text-2xl mb-6">Netflix Account Info</h2>
-                <button onclick="generateAccount()" 
-                        class="bg-zinc-800 hover:bg-zinc-700 px-8 py-4 rounded-2xl">
-                    Generate Another
-                </button>
+        <div class="flex gap-4 mb-8">
+            <button onclick="switchTab(0)" class="tab-btn active px-8 py-3 rounded-full bg-white text-black font-medium">Netflix</button>
+        </div>
+
+        <!-- Netflix Panel -->
+        <div id="netflix-panel" class="bg-zinc-900 rounded-3xl p-8">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-brands fa-netflix text-3xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-semibold">Netflix Account Info</h2>
+                    <p class="text-green-400 text-sm">✅ Ready to generate</p>
+                </div>
             </div>
+
+            <button onclick="generateAccount()" 
+                    class="w-full bg-zinc-800 hover:bg-zinc-700 py-5 rounded-2xl text-lg font-medium flex items-center justify-center gap-3">
+                <i class="fa-solid fa-sync"></i>
+                Generate Another
+            </button>
+
+            <div id="result" class="mt-6 hidden"></div>
         </div>
     </div>
 
     <script>
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('total').textContent = data.total;
+                document.getElementById('active').textContent = data.active;
+            } catch(e) {}
+        }
+
         async function generateAccount() {
-            const res = await fetch('/api/generate');
-            const data = await res.json();
-            if (data.success) {
-                alert("✅ Generated! Link: " + data.pc_link);
-                window.open(data.pc_link, '_blank');
-            } else {
-                alert(data.error);
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/generate');
+                const data = await res.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="bg-green-900/30 border border-green-500 rounded-2xl p-6">
+                            <p class="text-green-400 mb-4">✅ Generated successfully!</p>
+                            <a href="${data.pc_link}" target="_blank" 
+                               class="block bg-green-600 hover:bg-green-700 text-center py-4 rounded-xl font-medium">
+                                Open Netflix Link
+                            </a>
+                        </div>`;
+                    resultDiv.classList.remove('hidden');
+                    loadStats();
+                } else {
+                    alert(data.error || "Failed to generate");
+                }
+            } catch(e) {
+                alert("Network error");
             }
         }
+
+        function switchTab(n) {
+            // For future services
+        }
+
+        // Load stats on start
+        setInterval(loadStats, 10000);
+        loadStats();
     </script>
 </body>
 </html>
