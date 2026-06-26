@@ -12,24 +12,24 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# ====================== IMPROVED NFTOKEN LOGIC ======================
+# ====================== ROBUST NFTOKEN LOGIC ======================
 def extract_netflix_id(cookie_text):
-    """Robust extractor for different cookie formats from the checker"""
+    """Improved extractor for harshitkamboj checker format"""
     if not cookie_text:
         return None
     
-    # 1. Direct NetflixId=...
+    # 1. Netscape format line with NetflixId
+    match = re.search(r'NetflixId\s+([^\s]+)', cookie_text)
+    if match:
+        return match.group(1)
+    
+    # 2. Direct NetflixId=...
     match = re.search(r'NetflixId=([^;,\s]+)', cookie_text)
     if match:
         return match.group(1)
     
-    # 2. Netscape format (most common in your files)
-    match = re.search(r'\.netflix\.com\s+TRUE\s+/\s+TRUE\s+\d+\s+NetflixId\s+([^\s]+)', cookie_text)
-    if match:
-        return match.group(1)
-    
-    # 3. Quoted or JSON-like
-    match = re.search(r'"?NetflixId"?\s*[:=]\s*"?([^",;\s]+)', cookie_text)
+    # 3. Fallback for encoded values
+    match = re.search(r'NetflixId["\s:=]+([^"\s,]+)', cookie_text)
     if match:
         return match.group(1)
     
@@ -38,7 +38,7 @@ def extract_netflix_id(cookie_text):
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "Could not find NetflixId in the cookie text"
+        return None, "Could not extract NetflixId from cookie"
 
     headers = {
         "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
@@ -49,9 +49,9 @@ def fetch_nftoken(cookie_text):
     try:
         r = requests.get(
             "https://ios.prod.ftl.netflix.com/iosui/user/15.48",
-            params=params,
-            headers=headers,
-            timeout=20,
+            params=params, 
+            headers=headers, 
+            timeout=25, 
             verify=False
         )
         data = r.json()
@@ -59,9 +59,9 @@ def fetch_nftoken(cookie_text):
         
         if token:
             return token, None
-        return None, "Failed to generate NFToken (cookie may be expired)"
+        return None, "Failed to generate NFToken"
     except Exception as e:
-        return None, f"Request error: {str(e)}"
+        return None, f"Network error: {str(e)}"
 
 # ====================== DATABASE ======================
 def get_db():
@@ -106,11 +106,11 @@ def admin_page():
 @app.route("/api/add_account", methods=["POST"])
 def add_account():
     try:
-        data = request.get_json() or request.form.to_dict()
+        data = request.get_json(silent=True) or request.form.to_dict()
         cookie_text = (data.get("cookie_text") or "").strip()
 
         if not cookie_text:
-            return jsonify({"success": False, "error": "Cookie text is empty"}), 400
+            return jsonify({"success": False, "error": "Cookie is empty"}), 400
 
         token, error = fetch_nftoken(cookie_text)
         if error or not token:
@@ -128,7 +128,7 @@ def add_account():
         cur.close()
         conn.close()
 
-        return jsonify({"success": True, "message": "✅ Account validated and added successfully!"})
+        return jsonify({"success": True, "message": "✅ Account validated and added!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -152,14 +152,9 @@ def generate_account():
         if error or not token:
             cur.execute("UPDATE netflix_accounts SET is_active = FALSE WHERE id = %s", (account['id'],))
             conn.commit()
-            return jsonify({"success": False, "error": "Account expired. Try Generate Again."}), 400
+            return jsonify({"success": False, "error": "Account expired, trying another..."}), 400
 
-        # Update usage
-        cur.execute("""
-            UPDATE netflix_accounts 
-            SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
-            WHERE id = %s
-        """, (account['id'],))
+        cur.execute("UPDATE netflix_accounts SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 WHERE id = %s", (account['id'],))
         conn.commit()
 
         link = f"https://www.netflix.com/?nftoken={token}"
