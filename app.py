@@ -31,11 +31,11 @@ def extract_netflix_id(cookie_text):
         return match.group(1)
     return None
 
-# ====================== NFT TOKEN FETCHER (Fixed) ======================
+# ====================== FIXED NFT TOKEN FETCHER ======================
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "Could not find NetflixId in cookie"
+        return None, "Could not find NetflixId"
 
     headers = {
         "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
@@ -69,29 +69,21 @@ def fetch_nftoken(cookie_text):
         )
         
         print(f"🔍 Netflix Token Status: {r.status_code}")
-        logging.info(f"Response length: {len(r.text)}")
-
+        
         if r.status_code != 200:
             return None, f"Netflix API error {r.status_code}"
 
         data = r.json()
-        
-        # Robust token extraction
-        token = None
-        if isinstance(data, dict):
-            value = data.get("value") or {}
-            account = value.get("account") or {}
-            token_obj = account.get("token") or {}
-            default = token_obj.get("default") or {}
-            token = default.get("token")
+        token_path = (((data.get("value") or {}).get("account") or {}).get("token") or {}).get("default") or {}
+        token = token_path.get("token")
 
         if token and isinstance(token, str) and len(token) > 100:
             return token, None
-        return None, "Failed to extract valid NFToken (cookie may be expired)"
+        return None, "Failed to generate valid NFToken"
 
     except Exception as e:
-        logging.error(f"Token fetch error: {e}")
-        return None, f"Request error: {str(e)[:100]}"
+        logging.error(f"Token error: {e}")
+        return None, str(e)[:100]
 
 # ====================== DATABASE ======================
 def get_db():
@@ -151,8 +143,8 @@ def add_account():
         cur.execute("""
             INSERT INTO netflix_accounts (cookie_text, nftoken, is_active)
             VALUES (%s, %s, TRUE)
-            ON CONFLICT (cookie_text) 
-            DO UPDATE SET nftoken = EXCLUDED.nftoken, is_active = TRUE, added_at = CURRENT_TIMESTAMP
+            ON CONFLICT (cookie_text) DO UPDATE 
+            SET nftoken = EXCLUDED.nftoken, is_active = TRUE, added_at = CURRENT_TIMESTAMP
         """, (cookie_text, token))
         conn.commit()
         cur.close()
@@ -214,8 +206,7 @@ def stats():
         cur.close()
         conn.close()
         return jsonify({"total": row["total"] or 0, "active": row["active"] or 0})
-    except Exception as e:
-        logging.error(f"Stats error: {e}")
+    except:
         return jsonify({"total": 0, "active": 0})
 
 if __name__ == "__main__":
