@@ -27,12 +27,12 @@
             <form method="POST" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-slate-400 mb-2">Username</label>
-                    <input type="text" name="username" value="admin" required
+                    <input type="text" name="username" required autocomplete="off"
                            class="w-full bg-slate-900 border border-slate-700 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-400 mb-2">Password</label>
-                    <input type="password" name="password" value="admin" required
+                    <input type="password" name="password" required autocomplete="off"
                            class="w-full bg-slate-900 border border-slate-700 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm">
                 </div>
                 <button type="submit"
@@ -43,7 +43,7 @@
         </div>
 
         <div class="text-center mt-8 text-xs text-slate-500">
-            Default: <strong>admin / admin</strong>
+            Default credentials: <strong>admin / admin</strong>
         </div>
     </div>
 </body>
