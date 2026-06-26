@@ -6,12 +6,64 @@ import os
 import re
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "super-secret-key")
+app.secret_key = os.getenv("SECRET_KEY", "super-secret-key-change-in-production")
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# ====================== IMPROVED NFTOKEN LOGIC ======================
+def extract_netflix_id(cookie_text):
+    """Robust extractor for different cookie formats from the checker"""
+    if not cookie_text:
+        return None
+    
+    # 1. Direct NetflixId=...
+    match = re.search(r'NetflixId=([^;,\s]+)', cookie_text)
+    if match:
+        return match.group(1)
+    
+    # 2. Netscape format (most common in your files)
+    match = re.search(r'\.netflix\.com\s+TRUE\s+/\s+TRUE\s+\d+\s+NetflixId\s+([^\s]+)', cookie_text)
+    if match:
+        return match.group(1)
+    
+    # 3. Quoted or JSON-like
+    match = re.search(r'"?NetflixId"?\s*[:=]\s*"?([^",;\s]+)', cookie_text)
+    if match:
+        return match.group(1)
+    
+    return None
+
+def fetch_nftoken(cookie_text):
+    netflix_id = extract_netflix_id(cookie_text)
+    if not netflix_id:
+        return None, "Could not find NetflixId in the cookie text"
+
+    headers = {
+        "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
+        "Cookie": f"NetflixId={netflix_id}",
+    }
+    params = {"path": '["account","token","default"]', "responseFormat": "json"}
+
+    try:
+        r = requests.get(
+            "https://ios.prod.ftl.netflix.com/iosui/user/15.48",
+            params=params,
+            headers=headers,
+            timeout=20,
+            verify=False
+        )
+        data = r.json()
+        token = data.get("value", {}).get("account", {}).get("token", {}).get("default", {}).get("token")
+        
+        if token:
+            return token, None
+        return None, "Failed to generate NFToken (cookie may be expired)"
+    except Exception as e:
+        return None, f"Request error: {str(e)}"
+
+# ====================== DATABASE ======================
 def get_db():
     return psycopg2.connect(DATABASE_URL)
 
@@ -35,30 +87,7 @@ def init_db():
 
 init_db()
 
-# NFToken Logic
-def extract_netflix_id(cookie_text):
-    match = re.search(r'NetflixId=([^;]+)', cookie_text)
-    return match.group(1) if match else None
-
-def fetch_nftoken(cookie_text):
-    netflix_id = extract_netflix_id(cookie_text)
-    if not netflix_id:
-        return None, "Missing NetflixId"
-    headers = {
-        "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
-        "Cookie": f"NetflixId={netflix_id}",
-    }
-    params = {"path": '["account","token","default"]', "responseFormat": "json"}
-    try:
-        r = requests.get("https://ios.prod.ftl.netflix.com/iosui/user/15.48",
-                        params=params, headers=headers, timeout=20, verify=False)
-        data = r.json()
-        token = data.get("value", {}).get("account", {}).get("token", {}).get("default", {}).get("token")
-        return (token, None) if token else (None, "Failed to generate token")
-    except Exception as e:
-        return None, str(e)
-
-# Routes
+# ====================== ROUTES ======================
 @app.route("/")
 def dashboard():
     return render_template("index.html")
@@ -78,13 +107,14 @@ def admin_page():
 def add_account():
     try:
         data = request.get_json() or request.form.to_dict()
-        cookie_text = data.get("cookie_text", "").strip()
+        cookie_text = (data.get("cookie_text") or "").strip()
+
         if not cookie_text:
-            return jsonify({"success": False, "error": "Cookie is empty"}), 400
+            return jsonify({"success": False, "error": "Cookie text is empty"}), 400
 
         token, error = fetch_nftoken(cookie_text)
         if error or not token:
-            return jsonify({"success": False, "error": f"Invalid/Expired: {error}"}), 400
+            return jsonify({"success": False, "error": f"Invalid/Expired cookie: {error}"}), 400
 
         conn = get_db()
         cur = conn.cursor()
@@ -97,38 +127,51 @@ def add_account():
         conn.commit()
         cur.close()
         conn.close()
-        return jsonify({"success": True, "message": "✅ Account validated and saved!"})
+
+        return jsonify({"success": True, "message": "✅ Account validated and added successfully!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/generate")
 def generate_account():
-    # (same as previous version - works)
     try:
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM netflix_accounts WHERE is_active = TRUE ORDER BY last_used NULLS FIRST, usage_count ASC LIMIT 1")
+        cur.execute("""
+            SELECT * FROM netflix_accounts 
+            WHERE is_active = TRUE 
+            ORDER BY last_used NULLS FIRST, usage_count ASC 
+            LIMIT 1
+        """)
         account = cur.fetchone()
+
         if not account:
-            return jsonify({"success": False, "error": "No active accounts"}), 404
+            return jsonify({"success": False, "error": "No active accounts available"}), 404
 
         token, error = fetch_nftoken(account['cookie_text'])
         if error or not token:
             cur.execute("UPDATE netflix_accounts SET is_active = FALSE WHERE id = %s", (account['id'],))
             conn.commit()
-            return jsonify({"success": False, "error": "Account expired, try again"}), 400
+            return jsonify({"success": False, "error": "Account expired. Try Generate Again."}), 400
 
-        cur.execute("UPDATE netflix_accounts SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 WHERE id = %s", (account['id'],))
+        # Update usage
+        cur.execute("""
+            UPDATE netflix_accounts 
+            SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
+            WHERE id = %s
+        """, (account['id'],))
         conn.commit()
+
+        link = f"https://www.netflix.com/?nftoken={token}"
+
         cur.close()
         conn.close()
 
-        token_url = f"https://www.netflix.com/?nftoken={token}"
         return jsonify({
             "success": True,
-            "pc_link": token_url,
-            "mobile_link": token_url,
-            "tv_link": token_url
+            "pc_link": link,
+            "mobile_link": link,
+            "tv_link": link
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
