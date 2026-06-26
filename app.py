@@ -79,7 +79,7 @@ def fetch_nftoken(cookie_text):
 
         if token and isinstance(token, str) and len(token) > 100:
             return token, None
-        return None, "Failed to generate NFToken"
+        return None, "Failed to generate NFToken (cookie may be expired/invalid)"
 
     except Exception as e:
         logging.error(f"Token error: {e}")
