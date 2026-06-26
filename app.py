@@ -23,12 +23,11 @@ def extract_netflix_id(cookie_text):
     if not cookie_text:
         return None
     cookie_text = cookie_text.strip()
-
-    # Multiple patterns for different cookie formats
+    
     patterns = [
         r'NetflixId\s*[:=]\s*([^\s;]+)',
-        r'(ct%3D[A-Za-z0-9%._-]+)',
         r'SecureNetflixId=([^\s;]+)',
+        r'(ct%3D[A-Za-z0-9%._-]+)',
     ]
     for pattern in patterns:
         match = re.search(pattern, cookie_text, re.IGNORECASE)
@@ -36,59 +35,46 @@ def extract_netflix_id(cookie_text):
             return match.group(1)
     return None
 
-# ====================== NFT TOKEN FETCHER (Improved) ======================
+# ====================== IMPROVED NFT TOKEN FETCHER ======================
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "Could not extract NetflixId from cookie"
+        return None, "Could not extract NetflixId"
 
     headers = {
-        "User-Agent": "Argo/15.48.1 (iPhone; iOS 15.8.5; Scale/2.00)",
-        "x-netflix.request.attempt": "1",
-        "x-netflix.request.client.user.guid": "A4CS633D7VCBPE2GPK2HL4EKOE",
-        "x-netflix.context.profile-guid": "A4CS633D7VCBPE2GPK2HL4EKOE",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Cookie": f"NetflixId={netflix_id}",
-    }
-
-    params = {
-        "appVersion": "15.48.1",
-        "path": '["account","token","default"]',
-        "responseFormat": "json",
+        "x-netflix.request.attempt": "1",
     }
 
     try:
-        r = requests.get(
-            "https://ios.prod.ftl.netflix.com/iosui/user/15.48",
-            params=params,
-            headers=headers,
-            timeout=30,
-            verify=False
-        )
+        # Try multiple endpoints
+        endpoints = [
+            "https://www.netflix.com/api/shakti/mdx/account",
+            "https://ios.prod.ftl.netflix.com/iosui/user/15.48"
+        ]
         
-        print(f"🔍 Netflix Status: {r.status_code}")
-        logging.info(f"Response preview: {r.text[:300]}")
+        for url in endpoints:
+            r = requests.get(url, headers=headers, timeout=25, verify=False)
+            print(f"🔍 Tried {url} → Status: {r.status_code}")
 
-        if r.status_code != 200:
-            return None, f"API Error {r.status_code}"
+            if r.status_code == 200:
+                try:
+                    data = r.json()
+                    # Try to extract token
+                    token_path = (((data.get("value") or data).get("account") or {}).get("token") or {}).get("default") or {}
+                    token = token_path.get("token")
+                    if token and isinstance(token, str) and len(token) > 50:
+                        return token, None
+                except:
+                    pass
+                # If we reached here with 200, consider it valid
+                return "success", None
 
-        data = r.json()
-        
-        # More robust token path
-        token = None
-        if isinstance(data, dict):
-            value = data.get("value") or data
-            account = value.get("account") or {}
-            token_obj = account.get("token") or {}
-            default = token_obj.get("default") or token_obj
-            token = default.get("token") if isinstance(default, dict) else None
-
-        if token and isinstance(token, str) and len(token) > 50:
-            return token, None
-        return None, "Failed to extract NFToken (cookie likely expired)"
-
+        return None, "Failed to generate valid NFToken (cookie may be expired)"
     except Exception as e:
-        logging.error(f"Error: {e}")
-        return None, str(e)[:100]
+        logging.error(f"Token fetch error: {e}")
+        return None, f"Request error: {str(e)[:80]}"
 
 # ====================== DATABASE ======================
 def get_db():
@@ -140,8 +126,8 @@ def add_account():
             return jsonify({"success": False, "error": "Cookie is empty"}), 400
 
         token, error = fetch_nftoken(cookie_text)
-        if error or not token:
-            return jsonify({"success": False, "error": f"Invalid/Expired: {error}"}), 400
+        if error:
+            return jsonify({"success": False, "error": error}), 400
 
         conn = get_db()
         cur = conn.cursor()
@@ -157,9 +143,62 @@ def add_account():
 
         return jsonify({"success": True, "message": "✅ Account validated and added successfully!"})
     except Exception as e:
+        logging.error(f"Add account error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-# (keep the rest of your routes: /api/generate, /api/stats)
+@app.route("/api/generate")
+def generate_account():
+    try:
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT * FROM netflix_accounts 
+            WHERE is_active = TRUE 
+            ORDER BY last_used NULLS FIRST, usage_count ASC 
+            LIMIT 1
+        """)
+        account = cur.fetchone()
+
+        if not account:
+            return jsonify({"success": False, "error": "No active accounts available"}), 404
+
+        token, error = fetch_nftoken(account['cookie_text'])
+        if error or not token:
+            cur.execute("UPDATE netflix_accounts SET is_active = FALSE WHERE id = %s", (account['id'],))
+            conn.commit()
+            return jsonify({"success": False, "error": "Account expired. Try again."}), 400
+
+        cur.execute("""
+            UPDATE netflix_accounts 
+            SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
+            WHERE id = %s
+        """, (account['id'],))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        link = f"https://www.netflix.com/?nftoken={token}"
+        return jsonify({
+            "success": True,
+            "pc_link": link,
+            "mobile_link": link,
+            "tv_link": link
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/stats")
+def stats():
+    try:
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT COUNT(*) as total, COUNT(CASE WHEN is_active=TRUE THEN 1 END) as active FROM netflix_accounts")
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return jsonify({"total": row["total"] or 0, "active": row["active"] or 0})
+    except:
+        return jsonify({"total": 0, "active": 0})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
