@@ -31,7 +31,7 @@ def extract_netflix_id(cookie_text):
         return match.group(1)
     return None
 
-# ====================== RICH ACCOUNT INFO ======================
+# ====================== RICH METADATA ======================
 def fetch_account_metadata(netflix_id, nftoken):
     try:
         headers = {
@@ -39,7 +39,10 @@ def fetch_account_metadata(netflix_id, nftoken):
             "Cookie": f"NetflixId={netflix_id}",
             "x-netflix.nftoken": nftoken,
         }
-        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", headers=headers, timeout=15, verify=False)
+        r = requests.get(
+            "https://www.netflix.com/api/shakti/mdx/account",
+            headers=headers, timeout=15, verify=False
+        )
         if r.status_code == 200:
             data = r.json()
             return {
@@ -48,8 +51,8 @@ def fetch_account_metadata(netflix_id, nftoken):
                 "country": data.get("country") or "Unknown",
                 "renewal": data.get("renewalDate") or "N/A"
             }
-    except:
-        pass
+    except Exception as e:
+        logging.warning(f"Metadata fetch failed: {e}")
     return {"email": "N/A", "plan": "Premium", "country": "Unknown", "renewal": "N/A"}
 
 # ====================== NFT TOKEN FETCHER ======================
@@ -89,7 +92,9 @@ def fetch_nftoken(cookie_text):
             verify=False
         )
         
-        print(f"🔍 Netflix Token Status: {r.status_code}")
+        print(f"🔍 Netflix Token Status: {r.status_code} | Length: {len(r.text)}")
+        logging.info(f"Netflix response: {r.text[:200]}")
+
         if r.status_code != 200:
             return None, None, f"Netflix API error {r.status_code}"
 
@@ -100,12 +105,15 @@ def fetch_nftoken(cookie_text):
         if token:
             metadata = fetch_account_metadata(netflix_id, token)
             return token, metadata, None
-        return None, None, "Failed to generate NFToken"
+        return None, None, "Failed to generate NFToken (cookie may be expired)"
     except Exception as e:
-        return None, None, f"Error: {str(e)[:100]}"
+        logging.error(f"Token fetch error: {e}")
+        return None, None, f"Request error: {str(e)[:100]}"
 
 # ====================== DATABASE ======================
 def get_db():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def init_db():
@@ -130,7 +138,7 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
-    print("✅ Database table recreated with rich metadata")
+    print("✅ Database table recreated successfully")
 
 init_db()
 
@@ -183,12 +191,13 @@ def add_account():
 
         msg = f"""
         ✅ Account validated and added!<br>
-        👤 Email: {metadata.get('email')}<br>
-        📋 Plan: {metadata.get('plan')}<br>
-        🌍 Country: {metadata.get('country')}
+        👤 Email: {metadata.get('email', 'N/A')}<br>
+        📋 Plan: {metadata.get('plan', 'Premium')}<br>
+        🌍 Country: {metadata.get('country', 'Unknown')}
         """
         return jsonify({"success": True, "message": msg})
     except Exception as e:
+        logging.error(f"Add account error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/generate")
@@ -245,7 +254,7 @@ def stats():
         conn.close()
         return jsonify({"total": row["total"] or 0, "active": row["active"] or 0})
     except Exception as e:
-        print(f"Stats error: {e}")
+        logging.error(f"Stats error: {e}")
         return jsonify({"total": 0, "active": 0})
 
 if __name__ == "__main__":
