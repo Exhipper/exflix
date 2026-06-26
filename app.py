@@ -12,14 +12,16 @@ logging.basicConfig(level=logging.INFO)
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 app = Flask(__name__, template_folder="templates")
-app.secret_key = os.getenv("SECRET_KEY", "super-secret-key")
+app.secret_key = os.getenv("SECRET_KEY", "super-secret-key-change-in-production")
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# ====================== COOKIE PARSER ======================
 def extract_netflix_id(cookie_text):
-    if not cookie_text: return None
+    if not cookie_text:
+        return None
     cookie_text = cookie_text.strip()
     match = re.search(r'NetflixId\s*[:=]\s*([^\s;]+)', cookie_text, re.IGNORECASE)
     if match: return match.group(1)
@@ -27,7 +29,7 @@ def extract_netflix_id(cookie_text):
     if match: return match.group(1)
     return None
 
-# New simpler method - many generators use this now
+# ====================== NFT TOKEN (Simplified) ======================
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
@@ -36,26 +38,20 @@ def fetch_nftoken(cookie_text):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Cookie": f"NetflixId={netflix_id}",
-        "x-netflix.nftoken": "true",
     }
 
     try:
-        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", headers=headers, timeout=20, verify=False)
-        print(f"🔍 Main Endpoint Status: {r.status_code}")
+        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", 
+                        headers=headers, timeout=20, verify=False)
+        print(f"🔍 Netflix Status: {r.status_code}")
 
         if r.status_code == 200:
-            return "success", None  # At least it's valid enough
-
-        # Fallback
-        r2 = requests.get("https://www.netflix.com/login", headers=headers, timeout=15, verify=False)
-        if r2.status_code == 200:
             return "success", None
-
-        return None, f"Cookie rejected (Status {r.status_code}) - may be expired"
+        return None, f"Cookie rejected (Status {r.status_code})"
     except Exception as e:
         return None, str(e)[:100]
 
-# Database and routes (same as before)
+# ====================== DATABASE (PERSISTENT) ======================
 def get_db():
     return psycopg2.connect(DATABASE_URL)
 
@@ -76,10 +72,11 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
-    print("✅ Database ready")
+    print("✅ Database ready (persistent)")
 
 init_db()
 
+# ====================== ROUTES ======================
 @app.route("/")
 def dashboard():
     return render_template("index.html")
@@ -123,7 +120,60 @@ def add_account():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-# Keep your existing /api/generate and /api/stats routes
+@app.route("/api/generate")
+def generate_account():
+    try:
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT * FROM netflix_accounts 
+            WHERE is_active = TRUE 
+            ORDER BY last_used NULLS FIRST, usage_count ASC 
+            LIMIT 1
+        """)
+        account = cur.fetchone()
+
+        if not account:
+            return jsonify({"success": False, "error": "No active accounts available"}), 404
+
+        token, error = fetch_nftoken(account['cookie_text'])
+        if error:
+            cur.execute("UPDATE netflix_accounts SET is_active = FALSE WHERE id = %s", (account['id'],))
+            conn.commit()
+            return jsonify({"success": False, "error": "Account expired"}), 400
+
+        cur.execute("""
+            UPDATE netflix_accounts 
+            SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
+            WHERE id = %s
+        """, (account['id'],))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        link = f"https://www.netflix.com/?nftoken=success"
+        return jsonify({
+            "success": True,
+            "pc_link": link,
+            "mobile_link": link,
+            "tv_link": link
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/stats")
+def stats():
+    try:
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT COUNT(*) as total, COUNT(CASE WHEN is_active=TRUE THEN 1 END) as active FROM netflix_accounts")
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return jsonify({"total": row["total"] or 0, "active": row["active"] or 0})
+    except Exception as e:
+        print(f"Stats error: {e}")
+        return jsonify({"total": 0, "active": 0})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
