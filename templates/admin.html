@@ -7,27 +7,28 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
         
         body { font-family: 'Inter', sans-serif; background: #020617; }
         .header-font { font-family: 'Space Grotesk', sans-serif; }
-        .mono { font-family: 'VT323', monospace; }
 
         .glass { 
             background: rgba(15, 23, 42, 0.85); 
             backdrop-filter: blur(20px); 
-            border: 1px solid rgba(236, 72, 153, 0.25); 
+            border: 1px solid rgba(103, 232, 249, 0.3); 
         }
-        .neon-border { box-shadow: 0 0 20px #f472b6, 0 0 40px #db2777; }
+        .neon-cyan { 
+            box-shadow: 0 0 20px #67e8f9, 
+                        0 0 40px #22d3ee; 
+        }
 
         .scanline::after {
             content: '';
             position: absolute;
-            top: -100%; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(transparent, rgba(236, 72, 153, 0.1), transparent);
-            animation: scan 3s linear infinite;
+            inset: 0;
+            background: linear-gradient(transparent, rgba(103, 232, 249, 0.12), transparent);
+            animation: scan 6s linear infinite;
         }
-
         @keyframes scan {
             0% { transform: translateY(-100%); }
             100% { transform: translateY(400%); }
@@ -36,44 +37,33 @@
 </head>
 <body class="text-slate-200 min-h-screen">
     <div class="max-w-3xl mx-auto px-6 py-12">
-        <!-- Header -->
         <div class="flex items-center gap-4 mb-12">
-            <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center neon-border">
-                <i class="fa-solid fa-shield-halved text-white text-3xl"></i>
+            <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-3xl flex items-center justify-center neon-cyan">
+                <i class="fa-solid fa-microchip text-white text-3xl"></i>
             </div>
-            <div>
-                <h1 class="header-font text-5xl font-bold tracking-tighter glow-pink">COOKIE VAULT</h1>
-                <p class="text-emerald-400 mono text-sm">VALIDATION • ARCHIVE • LIVE</p>
-            </div>
+            <h1 class="header-font text-5xl font-bold tracking-tighter">COOKIE VALIDATOR</h1>
         </div>
 
-        <div class="glass rounded-3xl p-10 neon-border scanline">
-            <h2 class="text-3xl font-semibold mb-8 flex items-center gap-3">
-                <i class="fa-solid fa-microchip text-pink-400"></i>
-                INDEPENDENT COOKIE ANALYZER
-            </h2>
-
+        <div class="glass rounded-3xl p-10 neon-cyan scanline">
             <form id="addForm" class="space-y-8">
                 <div>
-                    <label class="block text-xs tracking-widest text-slate-400 mb-3">INSERT COOKIE DATA</label>
-                    <textarea id="cookie_text" rows="9"
-                        class="w-full bg-black/70 border border-slate-700 rounded-2xl p-6 mono text-sm focus:border-pink-500 focus:ring-1 resize-y"
-                        placeholder="Paste full NetflixId=... or Netscape / JSON format here..."></textarea>
+                    <label class="block text-xs tracking-widest text-cyan-400 mb-3">INSERT COOKIE DATA</label>
+                    <textarea id="cookie_text" rows="9" 
+                        class="w-full bg-black/70 border border-slate-700 rounded-2xl p-6 font-mono text-sm focus:border-cyan-400 focus:ring-cyan-400"
+                        placeholder="Paste full NetflixId=... or Netscape format here..."></textarea>
                 </div>
 
                 <button type="submit"
-                    class="w-full py-7 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 transition-all active:scale-95">
-                    <i class="fa-solid fa-satellite-dish"></i>
+                    class="w-full py-7 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold rounded-2xl text-xl neon-cyan transition-all">
                     INITIATE VERIFICATION
                 </button>
             </form>
 
-            <!-- Result Area -->
-            <div id="result" class="mt-8 min-h-[140px]"></div>
+            <div id="result" class="mt-8 min-h-[120px]"></div>
         </div>
 
-        <div class="text-center text-xs text-slate-500 mt-8 mono">
-            All cookies are validated directly against Netflix servers • No third-party storage
+        <div class="text-center text-xs text-slate-500 mt-8">
+            All cookies are validated directly against Netflix servers
         </div>
     </div>
 
@@ -83,13 +73,11 @@
             const cookie = document.getElementById('cookie_text').value.trim();
             const resultDiv = document.getElementById('result');
 
-            if (!cookie) return;
-
             resultDiv.innerHTML = `
-                <div class="glass rounded-2xl p-8 border border-amber-500">
-                    <div class="flex items-center gap-4 text-amber-400">
+                <div class="glass rounded-2xl p-8 border border-cyan-400">
+                    <div class="flex items-center gap-4 text-cyan-400">
                         <i class="fa-solid fa-spinner fa-spin text-2xl"></i>
-                        <span class="font-medium">CONNECTING TO NETFLIX DIAGNOSTIC ENGINE...</span>
+                        <span>Connecting to Netflix Diagnostic Engine...</span>
                     </div>
                 </div>`;
 
@@ -104,29 +92,23 @@
 
                 if (data.success) {
                     resultDiv.innerHTML = `
-                        <div class="glass rounded-2xl p-8 border border-emerald-500 bg-emerald-900/30">
+                        <div class="glass rounded-2xl p-8 border border-emerald-400 bg-emerald-900/30">
                             <div class="flex items-center gap-4 text-emerald-400">
                                 <i class="fa-solid fa-circle-check text-4xl"></i>
-                                <div class="flex-1">
+                                <div>
                                     <div class="text-2xl font-bold">VALIDATION SUCCESSFUL</div>
-                                    <div class="text-emerald-300 mt-1">${data.message || 'Account has been added to the vault.'}</div>
+                                    <p class="mt-1">${data.message || 'Account added to vault successfully.'}</p>
                                 </div>
                             </div>
                         </div>`;
                 } else {
                     resultDiv.innerHTML = `
-                        <div class="glass rounded-2xl p-8 border border-red-500 bg-red-900/20">
-                            <div class="flex items-center gap-4 text-red-400">
-                                <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
-                                <div>${data.error || 'Validation failed'}</div>
-                            </div>
+                        <div class="glass rounded-2xl p-8 border border-red-500">
+                            <div class="text-red-400">❌ ${data.error || 'Validation failed'}</div>
                         </div>`;
                 }
             } catch (err) {
-                resultDiv.innerHTML = `
-                    <div class="glass rounded-2xl p-8 border border-red-500 bg-red-900/20">
-                        <div class="text-red-400">Network Error: Unable to reach validation server</div>
-                    </div>`;
+                resultDiv.innerHTML = `<div class="text-red-400 p-6">Network Error</div>`;
             }
         });
     </script>
