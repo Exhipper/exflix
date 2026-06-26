@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login • Premium Account Gen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-[#020617] text-slate-200 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full px-6">
+        <div class="text-center mb-10">
+            <div class="mx-auto w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6">
+                <i class="fa-solid fa-shield-halved text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight">Admin Login</h1>
+            <p class="text-slate-400 mt-2">Access account management</p>
+        </div>
+
+        <div class="bg-[#0f172a] border border-slate-700 rounded-3xl p-8">
+            {% if error %}
+            <div class="mb-6 p-4 bg-red-900/30 border border-red-700 text-red-300 rounded-2xl text-sm">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-2">Username</label>
+                    <input type="text" name="username" value="admin" required
+                           class="w-full bg-slate-900 border border-slate-700 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-2">Password</label>
+                    <input type="password" name="password" value="admin" required
+                           class="w-full bg-slate-900 border border-slate-700 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm">
+                </div>
+                <button type="submit"
+                        class="w-full bg-rose-600 hover:bg-rose-500 py-4 rounded-2xl font-semibold text-white transition-colors">
+                    Login to Admin Panel
+                </button>
+            </form>
+        </div>
+
+        <div class="text-center mt-8 text-xs text-slate-500">
+            Default: admin / admin<br>
+            Change password later via environment variable
+        </div>
+    </div>
+</body>
+</html>

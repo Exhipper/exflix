@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Account Gen • Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --accent: #f43f5e;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .title-font {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .dark-card {
+            background-color: #0f172a;
+            border: 1px solid #1e2937;
+        }
+
+        .nav-active {
+            background-color: #f1e7ff;
+            color: #1e2937;
+            font-weight: 600;
+        }
+
+        .service-tab {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .service-tab.active {
+            background-color: #f1e7ff;
+            color: #1e2937;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .watch-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        .watch-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .section-header {
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+        }
+
+        .netflix-pink {
+            color: #f43f5e;
+        }
+
+        .account-card {
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .status-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .link-btn {
+            background-color: #1e2937;
+        }
+        
+        .link-btn:hover {
+            background-color: #334155;
+        }
+
+        .premium-gradient {
+            background: linear-gradient(90deg, #f43f5e, #fb7185);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-[#020617] text-slate-200">
+    <!-- Top Navigation -->
+    <nav class="border-b border-slate-800 bg-[#020617]/95 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-screen-xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-x-3">
+                    <div class="flex items-center gap-x-2">
+                        <div class="w-9 h-9 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-gem text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <span class="font-bold text-2xl tracking-tighter">acct</span>
+                            <span class="font-bold text-2xl tracking-tighter text-rose-500">gen</span>
+                        </div>
+                    </div>
+                    
+                    <div class="hidden md:flex items-center gap-x-1.5 text-sm ml-6">
+                        <a href="#" class="px-3 py-1.5 text-slate-400 hover:text-slate-200 transition-colors">Dashboard</a>
+                        <span class="text-slate-700">/</span>
+                        <span class="px-3 py-1.5 font-medium text-white">Generate Accounts</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-x-4">
+                    <div class="hidden sm:flex items-center gap-x-2 px-3 py-1.5 bg-slate-900 rounded-full text-xs border border-slate-800">
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span class="text-emerald-400 font-medium">Render • Live</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-x-2">
+                        <div class="w-8 h-8 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                            <img src="https://i.pravatar.cc/32?img=28" alt="User avatar" class="w-full h-full object-cover">
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="text-sm font-medium">you@domain.com</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-xl mx-auto px-6 pt-10 pb-16">
+        
+        <!-- Header + Stats -->
+        <div class="max-w-2xl">
+            <div class="flex items-center gap-x-3 mb-3">
+                <span class="px-4 py-1 bg-rose-500/10 text-rose-400 text-xs font-semibold tracking-[1.5px] rounded-full border border-rose-500/20">PREMIUM</span>
+            </div>
+            
+            <div class="flex justify-between items-end">
+                <h1 class="section-header">
+                    <span class="premium-gradient">Premium Account Gen</span>
+                </h1>
+                
+                <!-- Stats -->
+                <div id="stats" class="text-right hidden md:block">
+                    <div class="flex items-center gap-x-6 text-sm">
+                        <div>
+                            <div id="total-accounts" class="text-3xl font-bold text-white tabular-nums">0</div>
+                            <div class="text-xs text-slate-500">Total Accounts</div>
+                        </div>
+                        <div>
+                            <div id="active-accounts" class="text-3xl font-bold text-emerald-400 tabular-nums">0</div>
+                            <div class="text-xs text-slate-500">Active</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="mt-3 text-lg text-slate-400 max-w-md">
+                Select a service tab and click <span class="font-semibold text-white">generate</span> to retrieve a premium login link or copy cookies.
+            </p>
+        </div>
+
+        <!-- Service Tabs -->
+        <div class="mt-8 flex flex-wrap gap-2">
+            <!-- Netflix - Active -->
+            <button onclick="switchTab('netflix')" 
+                    class="service-tab active flex items-center gap-x-2 px-5 py-2.5 rounded-2xl text-sm font-semibold border border-transparent bg-white text-slate-900 shadow-sm">
+                <i class="fa-brands fa-netflix text-xl"></i>
+                <span>Netflix</span>
+            </button>
+            
+            <!-- Spotify -->
+            <button onclick="switchTab('spotify')" 
+                    class="service-tab flex items-center gap-x-2 px-5 py-2.5 rounded-2xl text-sm font-medium border border-slate-700 hover:border-slate-600 bg-slate-900 text-slate-300 hover:text-white transition-colors">
+                <i class="fa-brands fa-spotify text-green-400"></i>
+                <span>Spotify Promo <span class="text-amber-400 text-xs">(Soon)</span></span>
+            </button>
+        </div>
+
+        <!-- NETFLIX CARD -->
+        <div id="netflix-card" class="mt-6 max-w-2xl">
+            <div class="dark-card rounded-3xl p-8 account-card border border-slate-800">
+                
+                <!-- Card Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-x-3">
+                        <div class="w-11 h-11 bg-gradient-to-br from-red-600 to-rose-600 rounded-2xl flex items-center justify-center shadow-inner">
+                            <i class="fa-brands fa-netflix text-white text-3xl"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-2xl tracking-tight">Netflix Account Info</div>
+                            <div class="text-xs text-emerald-400 flex items-center gap-x-1.5 mt-0.5">
+                                <i class="fa-solid fa-check-circle"></i>
+                                <span class="font-medium">Ready to generate</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="generateAccount()"
+                            class="flex items-center gap-x-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 transition-all text-white text-sm font-semibold rounded-2xl border border-slate-700 hover:border-slate-600">
+                        <i class="fa-solid fa-sync-alt"></i>
+                        <span class="font-semibold">Generate Another</span>
+                    </button>
+                </div>
+
+                <!-- Warning Note -->
+                <div class="mb-7 rounded-2xl bg-yellow-900/20 border border-yellow-700/40 px-4 py-3 text-sm flex gap-x-3">
+                    <div class="mt-0.5">
+                        <i class="fa-solid fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="text-yellow-200/90 text-[13px] leading-snug">
+                        <strong class="font-semibold text-yellow-300">Note:</strong> If the link is not working, click the 
+                        <span class="font-semibold">Generate Another</span> button above to get a fresh account!
+                    </div>
+                </div>
+
+                <!-- Account Status / Info (populated by JS) -->
+                <div id="account-status" class="hidden mb-6 px-4 py-3 bg-slate-900/70 rounded-2xl border border-slate-700">
+                    <div class="flex items-center justify-between text-sm">
+                        <div>
+                            <span id="account-plan" class="font-semibold text-emerald-400"></span>
+                            <span class="mx-2 text-slate-500">•</span>
+                            <span id="account-country" class="text-slate-300"></span>
+                        </div>
+                        <div class="text-xs px-2.5 py-0.5 bg-emerald-900/40 text-emerald-400 rounded-full font-mono">
+                            ID: <span id="account-id"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Watch Links Section -->
+                <div class="space-y-3" id="watch-links-section">
+                    <div class="text-xs uppercase tracking-[1.5px] font-semibold text-slate-500 px-1 mb-1">WATCH LINKS — Tap to open</div>
+                    
+                    <!-- PC Link -->
+                    <a id="pc-link" href="#" target="_blank"
+                       class="watch-btn hidden group flex items-center justify-between w-full px-5 py-[17px] bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-2xl text-left transition-all">
+                        <div class="flex items-center gap-x-4">
+                            <div class="w-9 h-9 flex-shrink-0 bg-slate-700 group-hover:bg-slate-600 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-desktop text-xl text-slate-300"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold">PC WATCH LINK</div>
+                                <div class="text-[10px] text-slate-500 -mt-0.5">Desktop / Laptop • Chrome, Edge, Firefox</div>
+                            </div>
+                        </div>
+                        <div class="text-emerald-400 group-hover:text-emerald-300 transition-colors">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </div>
+                    </a>
+
+                    <!-- Mobile Link -->
+                    <a id="mobile-link" href="#" target="_blank"
+                       class="watch-btn hidden group flex items-center justify-between w-full px-5 py-[17px] bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-2xl text-left transition-all">
+                        <div class="flex items-center gap-x-4">
+                            <div class="w-9 h-9 flex-shrink-0 bg-slate-700 group-hover:bg-slate-600 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-mobile-screen-button text-xl text-slate-300"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold">MOBILE WATCH LINK</div>
+                                <div class="text-[10px] text-slate-500 -mt-0.5">iOS &amp; Android • Works in browser</div>
+                            </div>
+                        </div>
+                        <div class="text-emerald-400 group-hover:text-emerald-300 transition-colors">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </div>
+                    </a>
+
+                    <!-- TV Link -->
+                    <a id="tv-link" href="#" target="_blank"
+                       class="watch-btn hidden group flex items-center justify-between w-full px-5 py-[17px] bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-2xl text-left transition-all">
+                        <div class="flex items-center gap-x-4">
+                            <div class="w-9 h-9 flex-shrink-0 bg-slate-700 group-hover:bg-slate-600 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-tv text-xl text-slate-300"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold">TV WATCH LINK</div>
+                                <div class="text-[10px] text-slate-500 -mt-0.5">Smart TV, Fire Stick, Roku, Apple TV</div>
+                            </div>
+                        </div>
+                        <div class="text-emerald-400 group-hover:text-emerald-300 transition-colors">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Initial state / Empty state -->
+                <div id="empty-state" class="py-8 text-center">
+                    <div class="mx-auto w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-link text-3xl text-slate-600"></i>
+                    </div>
+                    <p class="text-slate-400 text-sm max-w-[220px] mx-auto">Click <span class="font-semibold text-white">"Generate Another"</span> above to receive your premium watch links instantly.</p>
+                </div>
+
+            </div>
+            
+            <div class="mt-4 px-1 flex items-center justify-between text-[10px] text-slate-500">
+                <div>Tokens usually expire in a few hours • Generate fresh when needed</div>
+                <div onclick="copyAllLinks()" class="cursor-pointer hover:text-slate-300 flex items-center gap-x-1">
+                    <i class="fa-solid fa-copy"></i> <span class="hidden sm:inline">Copy all links</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Services Placeholder -->
+        <div id="other-services" class="hidden max-w-2xl mt-6">
+            <div class="dark-card rounded-3xl p-8 text-center border border-slate-800">
+                <i class="fa-solid fa-tools text-4xl text-slate-600 mb-4"></i>
+                <h3 class="font-semibold text-xl mb-2">Coming Soon</h3>
+                <p class="text-slate-400 text-sm max-w-xs mx-auto">Support for Prime Video, Bilibili TV and Spotify Promo is under active development. Check back soon or contact support.</p>
+                
+                <div class="mt-6 text-xs text-slate-500">Want early access? Message us on Discord.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#f43f5e');
+        }
+
+        let currentService = 'netflix';
+        let lastGeneratedData = null;
+
+        function switchTab(service) {
+            currentService = service;
+            
+            // Update active tab styling
+            document.querySelectorAll('.service-tab').forEach(tab => {
+                tab.classList.remove('active', 'bg-white', 'text-slate-900');
+                tab.classList.add('bg-slate-900', 'text-slate-300', 'border-slate-700');
+                
+                if (tab.textContent.toLowerCase().includes(service)) {
+                    tab.classList.add('active', 'bg-white', 'text-slate-900');
+                    tab.classList.remove('bg-slate-900', 'text-slate-300', 'border-slate-700');
+                }
+            });
+
+            // Show/hide cards
+            const netflixCard = document.getElementById('netflix-card');
+            const otherServices = document.getElementById('other-services');
+
+            if (service === 'netflix') {
+                netflixCard.classList.remove('hidden');
+                otherServices.classList.add('hidden');
+            } else {
+                netflixCard.classList.add('hidden');
+                otherServices.classList.remove('hidden');
+            }
+        }
+
+        async function generateAccount() {
+            const generateBtn = event.currentTarget;
+            const emptyState = document.getElementById('empty-state');
+            const statusDiv = document.getElementById('account-status');
+            const linksSection = document.getElementById('watch-links-section');
+            
+            // Show loading state on button if exists
+            const originalText = event.target ? event.target.innerHTML : '';
+            
+            try {
+                // Disable buttons temporarily
+                const buttons = document.querySelectorAll('#netflix-card button');
+                buttons.forEach(b => b.disabled = true);
+
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('Error: ' + (data.error || 'Failed to generate account'));
+                    return;
+                }
+
+                lastGeneratedData = data;
+
+                // Hide empty state
+                emptyState.style.display = 'none';
+
+                // Show account status
+                statusDiv.classList.remove('hidden');
+                document.getElementById('account-plan').textContent = data.account_info.plan || 'Premium';
+                document.getElementById('account-country').textContent = data.account_info.country || 'US';
+                document.getElementById('account-id').textContent = data.account_info.account_id;
+
+                // Populate links
+                const pcLink = document.getElementById('pc-link');
+                const mobileLink = document.getElementById('mobile-link');
+                const tvLink = document.getElementById('tv-link');
+
+                pcLink.href = data.pc_link;
+                mobileLink.href = data.mobile_link;
+                tvLink.href = data.tv_link;
+
+                pcLink.classList.remove('hidden');
+                mobileLink.classList.remove('hidden');
+                tvLink.classList.remove('hidden');
+
+                // Optional: show expiry in console or tooltip
+                if (data.expires) {
+                    console.log('%c[Premium Gen] Token expires: ' + data.expires, 'color:#64748b');
+                }
+
+                // Success toast
+                showToast(data.message || 'New account ready!');
+
+            } catch (err) {
+                console.error(err);
+                alert('Network error while generating account. Please try again.');
+            } finally {
+                const buttons = document.querySelectorAll('#netflix-card button');
+                buttons.forEach(b => b.disabled = false);
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 right-6 bg-slate-800 border border-slate-700 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-x-3 text-sm z-[100]`;
+            toast.innerHTML = `
+                <i class="fa-solid fa-check-circle text-emerald-400"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2800);
+        }
+
+        function copyAllLinks() {
+            if (!lastGeneratedData) {
+                alert('Generate an account first!');
+                return;
+            }
+            
+            const text = `PC: ${lastGeneratedData.pc_link}\nMobile: ${lastGeneratedData.mobile_link}\nTV: ${lastGeneratedData.tv_link}`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const original = event.target.innerHTML;
+                showToast('All links copied to clipboard!');
+            }).catch(() => {
+                // Fallback
+                prompt('Copy these links:', text);
+            });
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                e.preventDefault();
+                const netflixCard = document.getElementById('netflix-card');
+                if (!netflixCard.classList.contains('hidden')) {
+                    generateAccount();
+                }
+            }
+        });
+
+        // Initialize
+        function init() {
+            initializeTailwind();
+            
+            // Make Netflix tab active by default
+            const netflixTab = document.querySelector('.service-tab');
+            if (netflixTab) netflixTab.classList.add('active', 'bg-white', 'text-slate-900');
+            
+            // Show Netflix card
+            document.getElementById('netflix-card').classList.remove('hidden');
+            document.getElementById('other-services').classList.add('hidden');
+            
+            // Load stats with animation
+            loadStats();
+            
+            // Auto-refresh stats every 10 seconds
+            setInterval(loadStats, 10000);
+            
+            // Optional: Auto-generate one on first load for demo (comment out in production)
+            // setTimeout(() => { if (confirm('Auto-generate a demo account?')) generateAccount(); }, 1200);
+            
+            console.log('%c[Premium Account Gen] UI initialized. Ready for production on Render.', 'color:#64748b');
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                
+                if (data.success) {
+                    const totalEl = document.getElementById('total-accounts');
+                    const activeEl = document.getElementById('active-accounts');
+                    
+                    // Animate numbers
+                    animateValue(totalEl, parseInt(totalEl.textContent) || 0, data.total_accounts, 800);
+                    animateValue(activeEl, parseInt(activeEl.textContent) || 0, data.active_accounts, 800);
+                    
+                    // Show stats
+                    document.getElementById('stats').classList.remove('hidden');
+                }
+            } catch (e) {
+                console.warn('Could not load stats:', e);
+            }
+        }
+
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                id.textContent = value;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    id.textContent = end;
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        window.onload = init;
+        
+        // Expose generate for console testing
+        window.generateAccount = generateAccount;
+    </script>
+</body>
+</html>
