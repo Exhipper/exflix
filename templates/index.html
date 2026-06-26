@@ -7,139 +7,115 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
         
         body { font-family: 'Inter', system_ui, sans-serif; }
-        .section-header { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; letter-spacing: -0.04em; }
-        
+        .header-font { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.04em; }
+
         .glass {
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(148, 163, 184, 0.1);
         }
-        
-        .neon-text {
-            text-shadow: 0 0 10px rgb(244 63 94 / 0.5);
-        }
 
         .stat-number {
             font-variant-numeric: tabular-nums;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .fancy-card {
-            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), 
-                        box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
         .fancy-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+            transform: translateY(-8px);
+            box-shadow: 0 30px 60px -15px rgb(244 63 94 / 0.3);
         }
 
         .link-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
         .link-btn:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-        }
-
-        .fade-in {
-            animation: fadeInUp 0.6s ease forwards;
+            transform: scale(1.05) translateY(-4px);
         }
 
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        .pulse-glow {
-            animation: pulseGlow 2s ease-in-out infinite;
-        }
+        .animate-in { animation: fadeInUp 0.6s ease forwards; }
     </style>
 </head>
-<body class="bg-[#020617] text-slate-200">
-    <div class="max-w-screen-xl mx-auto px-6 py-10">
+<body class="bg-[#020617] text-slate-200 min-h-screen">
+    <div class="max-w-6xl mx-auto px-6 py-12">
         <!-- Header -->
-        <div class="flex items-end justify-between mb-12">
+        <div class="flex justify-between items-start mb-16">
             <div>
-                <div class="inline-flex items-center gap-x-3 mb-4">
-                    <div class="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
-                        <i class="fa-solid fa-gem text-white text-3xl"></i>
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-14 h-14 bg-gradient-to-br from-rose-500 via-pink-600 to-violet-600 rounded-3xl flex items-center justify-center shadow-xl">
+                        <i class="fa-solid fa-gem text-4xl text-white"></i>
                     </div>
-                    <div>
-                        <h1 class="section-header text-6xl tracking-tighter">Premium Account<br>Generation Platform</h1>
-                    </div>
+                    <h1 class="header-font text-6xl font-bold tracking-tighter text-white">Premium Account Gen</h1>
                 </div>
-                <p class="text-xl text-slate-400 max-w-md">Enterprise-grade access to premium streaming services through validated credentials.</p>
+                <p class="text-xl text-slate-400 max-w-md">Enterprise-grade premium access with real-time validation and multi-platform delivery.</p>
             </div>
 
-            <!-- Live Stats with Animation -->
-            <div class="glass rounded-3xl p-8 border border-slate-700/50">
-                <div class="flex gap-x-10">
-                    <div>
-                        <div class="text-xs tracking-[2px] text-slate-500 mb-1">TOTAL ACCOUNTS</div>
-                        <div id="total-accounts" class="stat-number text-7xl font-semibold tabular-nums">0</div>
-                    </div>
-                    <div>
-                        <div class="text-xs tracking-[2px] text-slate-500 mb-1">ACTIVE &amp; VALIDATED</div>
-                        <div id="active-accounts" class="stat-number text-7xl font-semibold text-emerald-400 tabular-nums">0</div>
-                    </div>
+            <!-- Live Stats -->
+            <div class="glass rounded-3xl px-10 py-8 flex gap-12">
+                <div class="text-center">
+                    <div class="text-xs uppercase tracking-[3px] text-slate-400 mb-2">Total Accounts</div>
+                    <div id="total" class="stat-number text-6xl font-bold text-white">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs uppercase tracking-[3px] text-slate-400 mb-2">Active & Valid</div>
+                    <div id="active" class="stat-number text-6xl font-bold text-emerald-400">0</div>
                 </div>
             </div>
         </div>
 
-        <!-- Netflix Section -->
-        <div class="max-w-2xl">
-            <div class="glass rounded-3xl p-10 border border-slate-700/50 fancy-card">
-                <div class="flex items-center gap-x-4 mb-8">
-                    <div class="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center">
-                        <i class="fa-brands fa-netflix text-white text-4xl"></i>
+        <!-- Main Card -->
+        <div class="max-w-2xl mx-auto">
+            <div class="glass rounded-3xl p-12 fancy-card">
+                <div class="flex items-center gap-5 mb-10">
+                    <div class="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <i class="fa-brands fa-netflix text-5xl"></i>
                     </div>
                     <div>
-                        <div class="text-3xl font-semibold tracking-tight">Netflix Premium Access</div>
-                        <div class="text-emerald-400 flex items-center gap-x-2 text-sm mt-1">
-                            <i class="fa-solid fa-check-circle"></i>
-                            <span>System ready — All credentials pre-validated</span>
-                        </div>
+                        <h2 class="text-4xl font-semibold header-font tracking-tight">Netflix Premium Access</h2>
+                        <p class="text-emerald-400 flex items-center gap-2 mt-2">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span class="font-medium">All accounts pre-validated • High success rate</span>
+                        </p>
                     </div>
                 </div>
 
                 <button onclick="generateAccount()" 
-                        class="w-full py-6 bg-white text-black rounded-2xl font-semibold text-xl flex items-center justify-center gap-x-3 hover:bg-zinc-100 active:scale-[0.985] transition-all">
-                    <i class="fa-solid fa-sync-alt"></i>
-                    <span>Generate New Premium Session</span>
+                        class="w-full py-7 bg-white text-black rounded-2xl text-xl font-semibold flex items-center justify-center gap-4 hover:bg-slate-100 active:scale-95 transition-all shadow-xl">
+                    <i class="fa-solid fa-bolt"></i>
+                    GENERATE NEW PREMIUM SESSION
                 </button>
 
                 <!-- Link Selection -->
-                <div id="link-selection" class="hidden mt-8">
-                    <div class="text-sm text-slate-400 mb-4 tracking-widest">SELECT YOUR PREFERRED PLATFORM</div>
-                    <div class="grid grid-cols-3 gap-4">
-                        <a id="pc-link" href="#" target="_blank"
-                           class="link-btn flex flex-col items-center justify-center gap-y-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl p-6 text-center">
-                            <i class="fa-solid fa-desktop text-3xl text-blue-400"></i>
-                            <div>
-                                <div class="font-semibold">Desktop / PC</div>
-                                <div class="text-xs text-slate-400">Chrome • Edge • Firefox</div>
-                            </div>
+                <div id="link-selection" class="hidden mt-10 animate-in">
+                    <p class="text-slate-400 text-sm tracking-widest mb-6">CHOOSE YOUR PLATFORM</p>
+                    <div class="grid grid-cols-3 gap-6">
+                        <a id="pc-link" href="#" target="_blank" 
+                           class="link-btn group glass rounded-2xl p-8 text-center border border-slate-700 hover:border-blue-500">
+                            <i class="fa-solid fa-desktop text-4xl text-blue-400 mb-4"></i>
+                            <div class="font-semibold">PC / Desktop</div>
+                            <div class="text-xs text-slate-400">Chrome, Firefox, Edge</div>
                         </a>
                         
                         <a id="mobile-link" href="#" target="_blank"
-                           class="link-btn flex flex-col items-center justify-center gap-y-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl p-6 text-center">
-                            <i class="fa-solid fa-mobile-screen-button text-3xl text-purple-400"></i>
-                            <div>
-                                <div class="font-semibold">Mobile</div>
-                                <div class="text-xs text-slate-400">iOS • Android</div>
-                            </div>
+                           class="link-btn group glass rounded-2xl p-8 text-center border border-slate-700 hover:border-purple-500">
+                            <i class="fa-solid fa-mobile-screen text-4xl text-purple-400 mb-4"></i>
+                            <div class="font-semibold">Mobile</div>
+                            <div class="text-xs text-slate-400">iOS & Android</div>
                         </a>
                         
                         <a id="tv-link" href="#" target="_blank"
-                           class="link-btn flex flex-col items-center justify-center gap-y-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl p-6 text-center">
-                            <i class="fa-solid fa-tv text-3xl text-orange-400"></i>
-                            <div>
-                                <div class="font-semibold">Smart TV / Console</div>
-                                <div class="text-xs text-slate-400">Any browser-supported device</div>
-                            </div>
+                           class="link-btn group glass rounded-2xl p-8 text-center border border-slate-700 hover:border-orange-500">
+                            <i class="fa-solid fa-tv text-4xl text-orange-400 mb-4"></i>
+                            <div class="font-semibold">Smart TV</div>
+                            <div class="text-xs text-slate-400">TV • Console • Browser</div>
                         </a>
                     </div>
                 </div>
@@ -148,35 +124,20 @@
     </div>
 
     <script>
-        function animateCounter(element, target) {
-            let current = 0;
-            const increment = Math.ceil(target / 60);
-            const timer = setInterval(() => {
-                current += increment;
-                if (current >= target) {
-                    element.textContent = target;
-                    clearInterval(timer);
-                } else {
-                    element.textContent = current;
-                }
-            }, 30);
-        }
-
         async function loadStats() {
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
                 
-                const totalEl = document.getElementById('total-accounts');
-                const activeEl = document.getElementById('active-accounts');
+                const totalEl = document.getElementById('total');
+                const activeEl = document.getElementById('active');
                 
-                animateCounter(totalEl, data.total);
-                animateCounter(activeEl, data.active);
+                totalEl.textContent = data.total;
+                activeEl.textContent = data.active;
             } catch(e) {}
         }
 
         async function generateAccount() {
-            const btn = event.currentTarget;
             const selection = document.getElementById('link-selection');
             selection.classList.add('hidden');
 
@@ -185,25 +146,22 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    // Show fancy link selection
                     document.getElementById('pc-link').href = data.pc_link;
                     document.getElementById('mobile-link').href = data.mobile_link;
                     document.getElementById('tv-link').href = data.tv_link;
                     
                     selection.classList.remove('hidden');
-                    selection.classList.add('fade-in');
-                    
                     loadStats();
                 } else {
-                    alert(data.error || "All current credentials have expired. Please add new validated cookies via the admin panel.");
+                    alert(data.error || "No active accounts available. Please add new cookies.");
                 }
-            } catch(e) {
+            } catch (err) {
                 alert("Connection error. Please try again.");
             }
         }
 
         // Auto refresh stats
-        setInterval(loadStats, 15000);
+        setInterval(loadStats, 12000);
         window.onload = loadStats;
     </script>
 </body>
