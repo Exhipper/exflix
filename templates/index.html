@@ -3,111 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NETFLIX COOKIE VAULT • LIVE</title>
+    <title>NETFLIX COOKIE VAULT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
         
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: #020617;
-            overflow-x: hidden;
-        }
+        body { font-family: 'Inter', sans-serif; background: #020617; }
         .header-font { font-family: 'Space Grotesk', sans-serif; }
 
         .glass {
-            background: rgba(15, 23, 42, 0.75);
+            background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(236, 72, 153, 0.3);
+            border: 1px solid rgba(103, 232, 249, 0.2);
         }
 
-        .neon-glow {
-            box-shadow: 0 0 15px #f472b6,
-                        0 0 30px #db2777,
-                        0 0 50px #f472b6;
+        .neon-cyan {
+            box-shadow: 0 0 15px #67e8f9,
+                        0 0 35px #22d3ee;
         }
 
-        .scanline {
-            position: relative;
-        }
         .scanline::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(transparent, rgba(236, 72, 153, 0.15), transparent);
-            animation: scan 6s linear infinite;
-            pointer-events: none;
+            background: linear-gradient(transparent, rgba(103, 232, 249, 0.1), transparent);
+            animation: scan 7s linear infinite;
         }
 
         @keyframes scan {
-            0% { transform: translateY(-150%); }
+            0% { transform: translateY(-100%); }
             100% { transform: translateY(400%); }
-        }
-
-        .pulse-glow {
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { opacity: 0.9; }
-            50% { opacity: 1; }
         }
     </style>
 </head>
 <body class="text-slate-200">
-    <div class="max-w-7xl mx-auto px-6 py-10">
+    <div class="max-w-7xl mx-auto px-6 py-12">
         <div class="flex justify-between items-center mb-12">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-gradient-to-br from-pink-500 to-violet-600 rounded-3xl flex items-center justify-center neon-glow pulse-glow">
+                <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-3xl flex items-center justify-center neon-cyan">
                     <i class="fa-solid fa-satellite-dish text-white text-3xl"></i>
                 </div>
-                <h1 class="header-font text-5xl font-bold tracking-tighter text-white neon-glow">NETFLIX COOKIE VAULT</h1>
+                <h1 class="header-font text-5xl font-bold tracking-tighter">NETFLIX COOKIE VAULT</h1>
             </div>
-            <div class="flex gap-10">
+
+            <div class="flex gap-12">
                 <div>
-                    <div class="text-xs tracking-widest text-pink-400">TOTAL ACCOUNTS</div>
-                    <div id="total" class="text-5xl font-bold text-white">1</div>
+                    <div class="text-xs tracking-widest text-cyan-400">TOTAL ACCOUNTS</div>
+                    <div id="total" class="text-5xl font-bold">0</div>
                 </div>
                 <div>
                     <div class="text-xs tracking-widest text-emerald-400">ACTIVE</div>
-                    <div id="active" class="text-5xl font-bold text-emerald-400">1</div>
+                    <div id="active" class="text-5xl font-bold text-emerald-400">0</div>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Cookie Validator -->
-            <div class="glass rounded-3xl p-8 neon-glow scanline">
+            <!-- Validator -->
+            <div class="glass rounded-3xl p-8 neon-cyan scanline">
                 <h2 class="text-2xl font-semibold mb-6 flex items-center gap-3">
-                    <i class="fa-solid fa-microchip text-pink-400"></i>
+                    <i class="fa-solid fa-microchip text-cyan-400"></i>
                     COOKIE VALIDATOR
                 </h2>
-                <textarea id="cookie_text" rows="6" class="w-full bg-black/80 border border-slate-700 rounded-2xl p-5 mono text-sm" placeholder="Paste Netflix cookie here..."></textarea>
-                <button onclick="validateCookie()" class="mt-6 w-full py-6 bg-gradient-to-r from-pink-600 to-rose-600 rounded-2xl font-bold text-lg neon-glow">
+                <textarea id="cookie_text" rows="7" class="w-full bg-black/70 border border-slate-700 rounded-2xl p-6 font-mono text-sm" placeholder="Paste Netflix cookie here..."></textarea>
+                <button onclick="validateCookie()" class="mt-6 w-full py-6 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-2xl text-lg">
                     INITIATE VERIFICATION
                 </button>
                 <div id="result" class="mt-6"></div>
             </div>
 
-            <!-- Live Generator -->
-            <div class="glass rounded-3xl p-8 neon-glow">
+            <!-- Generator -->
+            <div class="glass rounded-3xl p-8 neon-cyan">
                 <h2 class="text-2xl font-semibold mb-6">LIVE SESSION GENERATOR</h2>
-                <button onclick="generateAccount()" class="w-full py-8 text-2xl font-bold bg-white text-black rounded-3xl hover:bg-slate-100 neon-glow">
+                <button onclick="generateAccount()" class="w-full py-8 text-xl font-bold bg-white text-black rounded-3xl hover:bg-slate-100">
                     GENERATE PREMIUM SESSION
                 </button>
 
                 <div id="link-selection" class="hidden mt-8 grid grid-cols-3 gap-4">
-                    <a id="pc-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-blue-400 border border-slate-700 transition-all">🖥️ PC</a>
-                    <a id="mobile-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-purple-400 border border-slate-700 transition-all">📱 Mobile</a>
-                    <a id="tv-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-orange-400 border border-slate-700 transition-all">📺 TV</a>
+                    <a id="pc-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-cyan-400">🖥️ PC</a>
+                    <a id="mobile-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-cyan-400">📱 Mobile</a>
+                    <a id="tv-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-cyan-400">📺 TV</a>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Stats + Generate functions (same as before)
+        // Same functions as before
         async function loadStats() {
             try {
                 const res = await fetch('/api/stats');
@@ -117,8 +100,8 @@
             } catch(e) {}
         }
 
-        async function validateCookie() { /* same as previous admin.html */ }
-        async function generateAccount() { /* same as previous */ }
+        async function validateCookie() { /* same logic as previous */ }
+        async function generateAccount() { /* same logic as previous */ }
 
         setInterval(loadStats, 10000);
         loadStats();
