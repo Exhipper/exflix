@@ -30,7 +30,6 @@ def extract_netflix_id(cookie_text):
         return match.group(1)
     return None
 
-# Current working method (June 2026)
 def fetch_nftoken(cookie_text):
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
@@ -43,18 +42,16 @@ def fetch_nftoken(cookie_text):
     }
 
     try:
-        # Primary method
         r = requests.get("https://www.netflix.com/api/shakti/mdx/account", 
                         headers=headers, timeout=20, verify=False)
         
-        print(f"🔍 Main API Status: {r.status_code}")
+        print(f"Main API Status: {r.status_code}")
 
         if r.status_code in [200, 204]:
             return "success", None
 
-        # Fallback
         r2 = requests.get("https://www.netflix.com/login", headers=headers, timeout=15, verify=False)
-        print(f"🔍 Login Page Status: {r2.status_code}")
+        print(f"Login Page Status: {r2.status_code}")
         
         if r2.status_code == 200:
             return "success", None
@@ -64,7 +61,6 @@ def fetch_nftoken(cookie_text):
         logging.error(f"Error: {e}")
         return None, "Connection error"
 
-# Database
 def get_db():
     return psycopg2.connect(DATABASE_URL)
 
@@ -85,11 +81,11 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
-    print("✅ Database ready")
+    print("Database ready")
 
 init_db()
 
-# Routes
+# ===================== ROUTES =====================
 @app.route("/")
 def dashboard():
     return render_template("index.html")
@@ -129,7 +125,7 @@ def add_account():
         cur.close()
         conn.close()
 
-        return jsonify({"success": True, "message": "✅ Account validated and added!"})
+        return jsonify({"success": True, "message": "Account validated and added!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -186,6 +182,38 @@ def stats():
         return jsonify({"total": row["total"] or 0, "active": row["active"] or 0})
     except:
         return jsonify({"total": 0, "active": 0})
+
+# NEW ROUTES
+@app.route("/api/accounts")
+def list_accounts():
+    try:
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, added_at, last_used, usage_count, is_active 
+            FROM netflix_accounts 
+            ORDER BY added_at DESC 
+            LIMIT 100
+        """)
+        accounts = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "accounts": accounts})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/deactivate/<int:account_id>", methods=["POST"])
+def deactivate_account(account_id):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("UPDATE netflix_accounts SET is_active = FALSE WHERE id = %s", (account_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
