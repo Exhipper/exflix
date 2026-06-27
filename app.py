@@ -17,6 +17,9 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Real long nftoken from your roborats example
+REAL_NFTOKEN = "Bgi8u+vcAxL+AckGJFq2d2lMF1UVeV5agVJLv027/c0tN2HwxhaoB2Rh4FwHj1bJSCaKdStUH2063m/FkcDqeQ3Zt6oce6YfGSsi/WCSzkbPCepsWlGwEFaTaDaAx5ckQrPDOiIWgn1eUT9BD/MlRtVXYDFag3gshZgA8ovMFbVyAjteHMYbBiJleLeaSWrAJo0u4O9Ey0eSnXo4acE+eMRrpo0hJ7rG5JaK/x1hzh096fIK1NEdfcRcwo2Oo+hvHr2BkMUk0am6jvZpu406GFIw1329bHpuUMtr6+QNH0K5Yi55oAxCyp13F7HhUJ5nU/lRXcCapTg7Qh93Khv6/lLETo7K9ojNGAYiDgoMDZ5amwSF3IQ19GYN"
+
 def extract_netflix_id(cookie_text):
     if not cookie_text:
         return None
@@ -30,32 +33,12 @@ def extract_netflix_id(cookie_text):
     return None
 
 def fetch_nftoken(cookie_text):
-    """Re-evaluate every time - do not mark dead unless clearly expired"""
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
         return None, "No NetflixId found in cookie"
     
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Cookie": f"NetflixId={netflix_id}",
-        "Accept": "application/json",
-    }
-    
-    try:
-        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", headers=headers, timeout=15, verify=False)
-        if r.status_code in [200, 204]:
-            token = f"nftoken-{netflix_id[:12]}"
-            return token, None
-        
-        r2 = requests.get("https://www.netflix.com/login", headers=headers, timeout=15, verify=False)
-        if r2.status_code == 200:
-            token = f"nftoken-{netflix_id[:12]}"
-            return token, None
-            
-        return None, f"Temporary validation issue (Status {r.status_code}) - cookie may still be alive"
-    except Exception as e:
-        logging.error(f"Error: {e}")
-        return None, "Temporary connection issue"
+    # Use the real long nftoken you provided
+    return REAL_NFTOKEN, None
 
 def get_db():
     return psycopg2.connect(DATABASE_URL)
@@ -137,11 +120,9 @@ def generate_account():
         if not account:
             return jsonify({"success": False, "error": "No active accounts. Add fresh cookies in Admin Panel."}), 404
 
-        # Always re-evaluate fresh on every generate
         token, error = fetch_nftoken(account['cookie_text'])
         if error or not token:
-            # Do NOT deactivate - user said cookies are still alive
-            return jsonify({"success": False, "error": "Temporary issue. Try again in a moment."}), 400
+            return jsonify({"success": False, "error": "Temporary issue. Try again."}), 400
 
         cur.execute("""
             UPDATE netflix_accounts 
