@@ -61,8 +61,14 @@
                 <h2 class="text-5xl font-bold tracking-tight mb-3">NETFLIX GENERATOR</h2>
                 <p class="text-xl text-slate-400 mb-8">Generate temporary premium login</p>
                 
-                <button onclick="generateNetflixAccount()" class="w-full max-w-md mx-auto py-8 bg-[#00ff9f] hover:bg-white text-black font-extrabold text-2xl rounded-3xl flex items-center justify-center gap-4 transition-all">
+                <button onclick="generateNetflixAccount()" id="main-generate-btn"
+                        class="w-full max-w-md mx-auto py-8 bg-[#00ff9f] hover:bg-white text-black font-extrabold text-2xl rounded-3xl flex items-center justify-center gap-4 transition-all">
                     <i class="fa-solid fa-rocket text-3xl"></i> GENERATE ACCOUNT
+                </button>
+                
+                <button onclick="generateNetflixAccount()" id="another-btn" 
+                        class="hidden mt-4 w-full max-w-md mx-auto py-4 border border-[#00ff9f33] hover:bg-[#00ff9f11] text-[#00ff9f] rounded-2xl text-lg">
+                    <i class="fa-solid fa-redo"></i> GENERATE ANOTHER
                 </button>
                 
                 <div id="generate-result" class="hidden mt-10">
@@ -78,7 +84,7 @@
     </div>
 
     <script>
-        // MATRIX RAIN + MOUSE + PARTICLES
+        // MATRIX RAIN + MOUSE + PARTICLES (max intensity)
         const canvas = document.getElementById('matrix');
         const ctx = canvas.getContext('2d');
         let cols, drops = [], fontSize = 15, speed = 1.2;
@@ -112,12 +118,12 @@
             logContainer.appendChild(line); logContainer.scrollTop = logContainer.scrollHeight;
             if (logContainer.children.length > 12) logContainer.removeChild(logContainer.children[0]);
         }
-        const fakeLogs = ["[11:07] COOKIE INJECTED", "[11:08] SESSION GENERATED", "[11:09] MATRIX STABLE"];
+        const fakeLogs = ["[11:32] SESSION GENERATED", "[11:33] COOKIE VALIDATED", "[11:34] MATRIX STABLE"];
         fakeLogs.forEach((m,i) => setTimeout(() => addLog(m), i*300));
         setInterval(() => addLog(fakeLogs[Math.floor(Math.random()*fakeLogs.length)]), 3500);
         document.getElementById('intrusion-log').classList.remove('hidden');
         
-        // STATS (auto refresh)
+        // STATS
         async function loadStats() {
             try {
                 const res = await fetch('/api/stats');
@@ -129,12 +135,16 @@
         setInterval(loadStats, 8000);
         loadStats();
         
-        // GENERATOR
-        async function generateNetflixAccount() {
+        // GENERATOR + GENERATE ANOTHER
+        async function generateNetflixAccount(isAnother = false) {
             const result = document.getElementById('generate-result');
-            const btn = event.currentTarget;
+            const mainBtn = document.getElementById('main-generate-btn');
+            const anotherBtn = document.getElementById('another-btn');
+            
+            const btn = isAnother ? anotherBtn : mainBtn;
             const orig = btn.innerHTML;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GENERATING...`;
+            
             try {
                 const res = await fetch('/api/generate');
                 const data = await res.json();
@@ -143,6 +153,7 @@
                     document.getElementById('mobile-link').href = data.mobile_link;
                     document.getElementById('tv-link').href = data.tv_link;
                     result.classList.remove('hidden');
+                    anotherBtn.classList.remove('hidden');
                     addLog("[LIVE] NEW SESSION GENERATED");
                 } else {
                     alert(data.error || "No active cookies");
