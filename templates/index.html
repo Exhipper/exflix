@@ -8,55 +8,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap');
-        
-        :root { --matrix-green: #00ff9f; --neon-cyan: #67e8f9; }
-        
         body { font-family: 'Inter', system_ui, sans-serif; background: #020617; color: #e0f2fe; overflow-x: hidden; }
         .header-font { font-family: 'Space Grotesk', 'VT323', sans-serif; }
         .mono { font-family: 'VT323', 'Courier New', monospace; }
-        
         #matrix { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.85; pointer-events: none; }
-        
         .glass { background: rgba(15,23,42,0.85); backdrop-filter: blur(24px); border: 1px solid rgba(103,232,249,0.25); }
         .neon-green { box-shadow: 0 0 15px #00ff9f, 0 0 35px #00ff9f; }
-        
         .glitch { position: relative; animation: glitch 1.5s infinite linear alternate-reverse; }
         @keyframes glitch { 0% { text-shadow: 2px 0 #00ff9f, -2px 0 #67e8f9; } 100% { text-shadow: -2px 0 #00ff9f, 2px 0 #67e8f9; } }
-        
-        .scanline::after { content:''; position:absolute; inset:0; background:linear-gradient(transparent 50%, rgba(0,255,159,0.08) 50%); background-size:100% 6px; animation:scan 4s linear infinite; }
-        @keyframes scan { 0%{transform:translateY(-100%)} 100%{transform:translateY(300%)} }
-        
-        .terminal { font-family:'VT323', monospace; background:rgba(0,0,0,0.6); border:1px solid #00ff9f33; }
-        
-        #intrusion-log {
-            position: fixed; bottom: 20px; left: 20px; width: 380px; height: 170px;
-            background: rgba(0,0,0,0.92); border: 1px solid #00ff9f33; z-index: 50;
-            font-size: 13px; line-height: 1.35; padding: 12px; color: #00ff9f; border-radius: 16px;
-        }
+        #intrusion-log { position: fixed; bottom: 20px; left: 20px; width: 380px; height: 170px; background: rgba(0,0,0,0.92); border: 1px solid #00ff9f33; z-index: 50; font-size: 13px; line-height: 1.35; padding: 12px; color: #00ff9f; border-radius: 16px; }
         #log-content { height: 125px; overflow-y: auto; padding-right: 6px; }
         #log-content::-webkit-scrollbar { width: 4px; }
         #log-content::-webkit-scrollbar-thumb { background: #00ff9f33; border-radius: 2px; }
-        
         .particle { position: absolute; width: 4px; height: 4px; background: #00ff9f; border-radius: 50%; pointer-events: none; z-index: 60; animation: particleFade 1.1s forwards; }
         @keyframes particleFade { to { opacity: 0; transform: scale(0); } }
-        
-        .matrix-btn:hover { transform: translateY(-3px); box-shadow: 0 0 30px #00ff9f; }
     </style>
 </head>
 <body>
     <canvas id="matrix"></canvas>
     
-    <!-- CONTAINED INTRUSION LOG -->
     <div id="intrusion-log" class="terminal hidden lg:block">
-        <div class="text-xs text-red-400 mb-2 flex items-center gap-2 sticky top-0 bg-black/80 pb-1 z-10">
-            <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-            INTRUSION LOGS • LIVE
-        </div>
+        <div class="text-xs text-red-400 mb-2 flex items-center gap-2 sticky top-0 bg-black/80 pb-1">INTRUSION LOGS • LIVE</div>
         <div id="log-content" class="mono text-xs"></div>
     </div>
     
     <div class="max-w-7xl mx-auto px-6 py-12 relative z-10">
-        <!-- HEADER -->
         <div class="flex justify-between items-center mb-12">
             <div class="flex items-center gap-4">
                 <div class="w-16 h-16 bg-black border border-[#00ff9f] rounded-2xl flex items-center justify-center neon-green">
@@ -67,21 +43,13 @@
                     <p class="text-[#00ff9f] text-sm tracking-[4px] mono -mt-2">MATRIX VAULT v2.077</p>
                 </div>
             </div>
-            
             <div class="flex items-center gap-6">
-                <a href="/admin" class="cursor-pointer flex items-center gap-2 text-xs mono bg-black/70 px-5 py-2.5 rounded-2xl border border-[#00ff9f33] hover:border-[#00ff9f] hover:bg-[#00ff9f11]">
+                <a href="/admin" class="flex items-center gap-2 text-xs mono bg-black/70 px-5 py-2.5 rounded-2xl border border-[#00ff9f33] hover:border-[#00ff9f]">
                     <i class="fa-solid fa-user-shield"></i> ADMIN PANEL
                 </a>
-                
                 <div class="flex gap-8 text-right">
-                    <div>
-                        <div class="text-xs tracking-widest text-[#00ff9f]">TOTAL IN VAULT</div>
-                        <div id="total" class="text-6xl font-bold mono">0</div>
-                    </div>
-                    <div>
-                        <div class="text-xs tracking-widest text-emerald-400">ACTIVE NODES</div>
-                        <div id="active" class="text-6xl font-bold mono text-emerald-400">0</div>
-                    </div>
+                    <div><div class="text-xs tracking-widest text-[#00ff9f]">TOTAL IN VAULT</div><div id="total" class="text-6xl font-bold mono">0</div></div>
+                    <div><div class="text-xs tracking-widest text-emerald-400">ACTIVE NODES</div><div id="active" class="text-6xl font-bold mono text-emerald-400">0</div></div>
                 </div>
             </div>
         </div>
@@ -89,39 +57,23 @@
         <!-- CENTRAL NETFLIX GENERATOR -->
         <div class="max-w-3xl mx-auto">
             <div class="glass rounded-3xl p-12 scanline neon-green text-center">
-                <div class="mb-8">
-                    <i class="fa-solid fa-globe text-6xl text-[#00ff9f] mb-6"></i>
-                    <h2 class="text-5xl font-bold tracking-tight mb-3">NETFLIX GENERATOR</h2>
-                    <p class="text-xl text-slate-400">Generate temporary premium login using cookies added in Admin Panel</p>
-                </div>
+                <i class="fa-solid fa-globe text-6xl text-[#00ff9f] mb-6"></i>
+                <h2 class="text-5xl font-bold tracking-tight mb-3">NETFLIX GENERATOR</h2>
+                <p class="text-xl text-slate-400 mb-8">Generate temporary premium login using cookies added in Admin Panel</p>
                 
-                <button onclick="generateNetflixAccount()" 
-                        class="matrix-btn w-full max-w-md mx-auto py-8 bg-[#00ff9f] hover:bg-white text-black font-extrabold text-2xl rounded-3xl flex items-center justify-center gap-4">
-                    <i class="fa-solid fa-rocket text-3xl"></i>
-                    <span>GENERATE ACCOUNT</span>
+                <button onclick="generateNetflixAccount()" class="w-full max-w-md mx-auto py-8 bg-[#00ff9f] hover:bg-white text-black font-extrabold text-2xl rounded-3xl flex items-center justify-center gap-4 transition-all">
+                    <i class="fa-solid fa-rocket text-3xl"></i> GENERATE ACCOUNT
                 </button>
                 
                 <div id="generate-result" class="hidden mt-10">
                     <div class="inline-flex items-center gap-3 bg-emerald-500/10 text-emerald-400 px-6 py-2 rounded-2xl mb-6">
-                        <i class="fa-solid fa-check-circle"></i>
-                        <span class="font-bold">ACCOUNT GENERATED • READY FOR USE</span>
+                        <i class="fa-solid fa-check-circle"></i> ACCOUNT GENERATED
                     </div>
-                    
-                    <div class="text-sm text-[#00ff9f] mb-4 tracking-widest">CHOOSE YOUR LOGIN METHOD</div>
-                    
+                    <div class="text-sm text-[#00ff9f] mb-4 tracking-widest">CHOOSE LOGIN METHOD</div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <a id="pc-link" href="#" target="_blank" class="matrix-btn glass rounded-2xl p-8 hover:border-[#00ff9f] border border-transparent flex flex-col items-center justify-center gap-3 group">
-                            <i class="fa-solid fa-desktop text-4xl group-hover:scale-110 transition-transform"></i>
-                            <div class="font-bold text-xl">PC LOGIN</div>
-                        </a>
-                        <a id="mobile-link" href="#" target="_blank" class="matrix-btn glass rounded-2xl p-8 hover:border-[#00ff9f] border border-transparent flex flex-col items-center justify-center gap-3 group">
-                            <i class="fa-solid fa-mobile-screen-button text-4xl group-hover:scale-110 transition-transform"></i>
-                            <div class="font-bold text-xl">MOBILE LOGIN</div>
-                        </a>
-                        <a id="tv-link" href="#" target="_blank" class="matrix-btn glass rounded-2xl p-8 hover:border-[#00ff9f] border border-transparent flex flex-col items-center justify-center gap-3 group">
-                            <i class="fa-solid fa-tv text-4xl group-hover:scale-110 transition-transform"></i>
-                            <div class="font-bold text-xl">TV LOGIN</div>
-                        </a>
+                        <a id="pc-link" href="#" target="_blank" class="glass rounded-2xl p-8 hover:border-[#00ff9f]">PC LOGIN</a>
+                        <a id="mobile-link" href="#" target="_blank" class="glass rounded-2xl p-8 hover:border-[#00ff9f]">MOBILE LOGIN</a>
+                        <a id="tv-link" href="#" target="_blank" class="glass rounded-2xl p-8 hover:border-[#00ff9f]">TV LOGIN</a>
                     </div>
                 </div>
             </div>
@@ -129,67 +81,47 @@
     </div>
 
     <script>
-        // MATRIX RAIN (max intensity + mouse particles)
+        // Matrix rain (max intensity)
         const canvas = document.getElementById('matrix');
         const ctx = canvas.getContext('2d');
         let cols, drops = [], fontSize = 15, speed = 1.2;
-        
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            cols = Math.floor(canvas.width / fontSize);
-            drops = Array(cols).fill(1);
-        }
-        window.addEventListener('resize', resize);
-        resize();
-        
-        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()';
-        
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.09)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#00ff9f';
-            ctx.font = fontSize + 'px VT323';
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; cols = Math.floor(canvas.width / fontSize); drops = Array(cols).fill(1); }
+        window.addEventListener('resize', resize); resize();
+        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$';
+        function draw() {
+            ctx.fillStyle = 'rgba(2,6,23,0.09)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = '#00ff9f'; ctx.font = fontSize + 'px VT323';
             for (let i = 0; i < drops.length; i++) {
-                const text = chars[Math.floor(Math.random() * chars.length)];
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                if (Math.random() > 0.88) ctx.fillStyle = '#67e8f9';
+                ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, drops[i] * fontSize);
                 if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i] += speed;
             }
         }
-        setInterval(drawMatrix, 38);
+        setInterval(draw, 38);
         
+        // Mouse particles
         document.addEventListener('mousemove', (e) => {
             for (let i = 0; i < 5; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = `${e.clientX + (Math.random()*30 - 15)}px`;
-                p.style.top = `${e.clientY + (Math.random()*30 - 15)}px`;
-                document.body.appendChild(p);
-                setTimeout(() => p.remove(), 1100);
+                const p = document.createElement('div'); p.className = 'particle';
+                p.style.left = (e.clientX + Math.random()*30 - 15) + 'px';
+                p.style.top = (e.clientY + Math.random()*30 - 15) + 'px';
+                document.body.appendChild(p); setTimeout(() => p.remove(), 1100);
             }
-            if (Math.random() > 0.6) speed = 2.4;
-            setTimeout(() => speed = 1.2, 300);
         });
         
-        // CONTAINED INTRUSION LOGS
+        // Contained logs
         const logContainer = document.getElementById('log-content');
-        const fakeLogs = ["[10:44] INTRUSION ATTEMPT BLOCKED", "[10:45] COOKIE VALIDATION SUCCESS", "[10:46] SESSION BREACH INITIATED", "[10:47] NEW ACCOUNT GENERATED", "[10:48] MATRIX INTEGRITY 99.8%"];
-        
         function addLog(msg) {
-            const line = document.createElement('div');
-            line.textContent = msg;
-            logContainer.appendChild(line);
-            logContainer.scrollTop = logContainer.scrollHeight;
+            const line = document.createElement('div'); line.textContent = msg;
+            logContainer.appendChild(line); logContainer.scrollTop = logContainer.scrollHeight;
             if (logContainer.children.length > 12) logContainer.removeChild(logContainer.children[0]);
         }
-        
-        fakeLogs.forEach((msg, i) => setTimeout(() => addLog(msg), i * 280));
-        setInterval(() => addLog(fakeLogs[Math.floor(Math.random() * fakeLogs.length)]), 3800);
+        const fakeLogs = ["[10:48] SESSION GENERATED", "[10:49] COOKIE VALIDATED", "[10:50] MATRIX STABLE"];
+        fakeLogs.forEach((m,i) => setTimeout(() => addLog(m), i*300));
+        setInterval(() => addLog(fakeLogs[Math.floor(Math.random()*fakeLogs.length)]), 3500);
         document.getElementById('intrusion-log').classList.remove('hidden');
         
-        // STATS
+        // Stats
         async function loadStats() {
             try {
                 const res = await fetch('/api/stats');
@@ -198,37 +130,28 @@
                 document.getElementById('active').textContent = data.active || 0;
             } catch(e) {}
         }
-        setInterval(loadStats, 12000);
-        loadStats();
+        setInterval(loadStats, 12000); loadStats();
         
-        // NETFLIX GENERATOR
+        // Generator
         async function generateNetflixAccount() {
-            const resultDiv = document.getElementById('generate-result');
+            const result = document.getElementById('generate-result');
             const btn = event.currentTarget;
-            const origText = btn.innerHTML;
+            const orig = btn.innerHTML;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GENERATING...`;
-            
             try {
                 const res = await fetch('/api/generate');
                 const data = await res.json();
-                
                 if (data.success) {
-                    document.getElementById('pc-link').href = data.pc_link || 'https://www.netflix.com/browse';
-                    document.getElementById('mobile-link').href = data.mobile_link || 'https://www.netflix.com/browse';
-                    document.getElementById('tv-link').href = data.tv_link || 'https://www.netflix.com/browse';
-                    resultDiv.classList.remove('hidden');
-                    addLog("[LIVE] NEW NETFLIX SESSION GENERATED");
+                    document.getElementById('pc-link').href = data.pc_link;
+                    document.getElementById('mobile-link').href = data.mobile_link;
+                    document.getElementById('tv-link').href = data.tv_link;
+                    result.classList.remove('hidden');
                 } else {
-                    alert("No active cookies. Add validated cookies in Admin Panel first.");
+                    alert(data.error || "Add cookies in Admin Panel first");
                 }
-            } catch(e) {
-                alert("Matrix connection error.");
-            } finally {
-                btn.innerHTML = origText;
-            }
+            } catch(e) { alert("Generation failed"); }
+            finally { btn.innerHTML = orig; }
         }
-        
-        console.log('%c[EXFLIX] Ready at max intensity', 'color:#00ff9f');
     </script>
 </body>
 </html>
