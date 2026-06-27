@@ -3,108 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NETFLIX COOKIE VAULT</title>
+    <title>EXFLIX // MATRIX VAULT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap');
         
-        body { font-family: 'Inter', sans-serif; background: #020617; }
-        .header-font { font-family: 'Space Grotesk', sans-serif; }
-
+        :root {
+            --matrix-green: #00ff9f;
+            --neon-cyan: #67e8f9;
+        }
+        
+        body { 
+            font-family: 'Inter', system_ui, sans-serif; 
+            background: #020617; 
+            color: #e0f2fe;
+            overflow-x: hidden;
+        }
+        
+        .header-font { font-family: 'Space Grotesk', 'VT323', sans-serif; }
+        .mono { font-family: 'VT323', 'Courier New', monospace; }
+        
+        #matrix {
+            position: fixed;
+            top: 0; left: 0;
+            z-index: -1;
+            opacity: 0.55;
+            pointer-events: none;
+        }
+        
         .glass {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(103, 232, 249, 0.2);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(103, 232, 249, 0.25);
         }
-
-        .neon-cyan {
-            box-shadow: 0 0 15px #67e8f9,
-                        0 0 35px #22d3ee;
+        
+        .neon-green { box-shadow: 0 0 15px #00ff9f, 0 0 35px #00ff9f; }
+        .neon-cyan { box-shadow: 0 0 15px #67e8f9, 0 0 35px #22d3ee; }
+        
+        .glitch {
+            position: relative;
+            animation: glitch 1.5s infinite linear alternate-reverse;
         }
-
+        
+        .scanline {
+            position: relative;
+            overflow: hidden;
+        }
         .scanline::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(transparent, rgba(103, 232, 249, 0.1), transparent);
-            animation: scan 7s linear infinite;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 255, 159, 0.08) 50%
+            );
+            background-size: 100% 6px;
+            animation: scan 4s linear infinite;
+            pointer-events: none;
         }
-
+        
         @keyframes scan {
             0% { transform: translateY(-100%); }
-            100% { transform: translateY(400%); }
+            100% { transform: translateY(300%); }
+        }
+        
+        .terminal {
+            font-family: 'VT323', monospace;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #00ff9f33;
+        }
+        
+        .matrix-btn {
+            transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .matrix-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px #00ff9f;
+        }
+        .matrix-btn:active { transform: scale(0.985); }
+        
+        .account-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .account-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 30px rgba(0, 255, 159, 0.2);
+        }
+        
+        .status-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
 </head>
 <body class="text-slate-200">
-    <div class="max-w-7xl mx-auto px-6 py-12">
+    <!-- MATRIX RAIN CANVAS -->
+    <canvas id="matrix"></canvas>
+    
+    <div class="max-w-7xl mx-auto px-6 py-12 relative z-10">
+        <!-- HEADER -->
         <div class="flex justify-between items-center mb-12">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-3xl flex items-center justify-center neon-cyan">
-                    <i class="fa-solid fa-satellite-dish text-white text-3xl"></i>
+                <div class="w-16 h-16 bg-black border border-[#00ff9f] rounded-2xl flex items-center justify-center neon-green">
+                    <i class="fa-solid fa-satellite-dish text-[#00ff9f] text-4xl"></i>
                 </div>
-                <h1 class="header-font text-5xl font-bold tracking-tighter">NETFLIX COOKIE VAULT</h1>
+                <div>
+                    <h1 class="header-font text-6xl font-bold tracking-[-3px] glitch">EXFLIX</h1>
+                    <p class="text-[#00ff9f] text-sm tracking-[4px] mono -mt-2">MATRIX VAULT v2.077</p>
+                </div>
             </div>
 
-            <div class="flex gap-12">
+            <div class="flex gap-8 text-right">
                 <div>
-                    <div class="text-xs tracking-widest text-cyan-400">TOTAL ACCOUNTS</div>
-                    <div id="total" class="text-5xl font-bold">0</div>
+                    <div class="text-xs tracking-widest text-[#00ff9f]">TOTAL IN VAULT</div>
+                    <div id="total" class="text-6xl font-bold mono text-white">0</div>
                 </div>
                 <div>
-                    <div class="text-xs tracking-widest text-emerald-400">ACTIVE</div>
-                    <div id="active" class="text-5xl font-bold text-emerald-400">0</div>
+                    <div class="text-xs tracking-widest text-emerald-400">ACTIVE NODES</div>
+                    <div id="active" class="text-6xl font-bold mono text-emerald-400">0</div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Validator -->
-            <div class="glass rounded-3xl p-8 neon-cyan scanline">
-                <h2 class="text-2xl font-semibold mb-6 flex items-center gap-3">
-                    <i class="fa-solid fa-microchip text-cyan-400"></i>
-                    COOKIE VALIDATOR
-                </h2>
-                <textarea id="cookie_text" rows="7" class="w-full bg-black/70 border border-slate-700 rounded-2xl p-6 font-mono text-sm" placeholder="Paste Netflix cookie here..."></textarea>
-                <button onclick="validateCookie()" class="mt-6 w-full py-6 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-2xl text-lg">
-                    INITIATE VERIFICATION
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            
+            <!-- COOKIE INJECTOR -->
+            <div class="lg:col-span-3 glass rounded-3xl p-8 scanline neon-cyan">
+                <div class="flex items-center gap-3 mb-6">
+                    <i class="fa-solid fa-microchip text-[#00ff9f] text-2xl"></i>
+                    <h2 class="text-3xl font-semibold tracking-tight">COOKIE INJECTOR</h2>
+                </div>
+                
+                <div class="terminal rounded-2xl p-1 mb-4">
+                    <textarea id="cookie_text" rows="8" 
+                        class="w-full bg-black/80 border-0 rounded-2xl p-6 font-mono text-sm focus:outline-none resize-y"
+                        placeholder="Paste NetflixId=... or full cookie string here..."></textarea>
+                </div>
+                
+                <button onclick="validateCookie()" 
+                    class="matrix-btn w-full py-5 bg-[#00ff9f] hover:bg-white text-black font-bold text-xl rounded-2xl flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>INJECT & VALIDATE COOKIE</span>
                 </button>
-                <div id="result" class="mt-6"></div>
+                
+                <div id="validate-result" class="mt-6 min-h-[80px]"></div>
             </div>
 
-            <!-- Generator -->
-            <div class="glass rounded-3xl p-8 neon-cyan">
-                <h2 class="text-2xl font-semibold mb-6">LIVE SESSION GENERATOR</h2>
-                <button onclick="generateAccount()" class="w-full py-8 text-xl font-bold bg-white text-black rounded-3xl hover:bg-slate-100">
-                    GENERATE PREMIUM SESSION
-                </button>
-
-                <div id="link-selection" class="hidden mt-8 grid grid-cols-3 gap-4">
-                    <a id="pc-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-cyan-400">🖥️ PC</a>
-                    <a id="mobile-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-cyan-400">📱 Mobile</a>
-                    <a id="tv-link" href="#" target="_blank" class="glass rounded-2xl p-6 text-center hover:border-cyan-400">📺 TV</a>
+            <!-- SESSION SPAWNER -->
+            <div class="lg:col-span-2 glass rounded-3xl p-8 scanline neon-green flex flex-col">
+                <div class="flex items-center gap-3 mb-6">
+                    <i class="fa-solid fa-broadcast-tower text-[#67e8f9] text-2xl"></i>
+                    <h2 class="text-3xl font-semibold tracking-tight">SESSION SPAWNER</h2>
+                </div>
+                
+                <div class="flex-1 flex flex-col justify-center">
+                    <button onclick="generateAccount()" 
+                        class="matrix-btn w-full py-8 bg-white text-black font-black text-2xl rounded-3xl hover:bg-[#00ff9f] transition-all flex items-center justify-center gap-4 active:scale-[0.985]">
+                        <i class="fa-solid fa-rocket"></i>
+                        <span>BREACH &amp; GENERATE</span>
+                    </button>
+                    
+                    <div class="text-center mt-4 text-xs text-slate-400 mono tracking-widest">ONE-TIME USE • EXPIRES IN ~4H</div>
+                </div>
+                
+                <div id="link-selection" class="hidden mt-8">
+                    <div class="text-xs tracking-[2px] text-[#00ff9f] mb-3 mono">SECURE TUNNELS READY</div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <a id="pc-link" href="#" target="_blank" 
+                           class="account-card glass rounded-2xl p-5 text-center border border-[#00ff9f33] hover:border-[#00ff9f] hover:text-[#00ff9f]">
+                            <i class="fa-solid fa-desktop mb-2 block text-2xl"></i>
+                            <div class="font-bold text-sm">PC / LAPTOP</div>
+                        </a>
+                        <a id="mobile-link" href="#" target="_blank" 
+                           class="account-card glass rounded-2xl p-5 text-center border border-[#00ff9f33] hover:border-[#00ff9f] hover:text-[#00ff9f]">
+                            <i class="fa-solid fa-mobile-screen mb-2 block text-2xl"></i>
+                            <div class="font-bold text-sm">MOBILE</div>
+                        </a>
+                        <a id="tv-link" href="#" target="_blank" 
+                           class="account-card glass rounded-2xl p-5 text-center border border-[#00ff9f33] hover:border-[#00ff9f] hover:text-[#00ff9f]">
+                            <i class="fa-solid fa-tv mb-2 block text-2xl"></i>
+                            <div class="font-bold text-sm">SMART TV</div>
+                        </a>
+                    </div>
+                    
+                    <button onclick="copyAllLinks()" 
+                        class="mt-4 w-full py-3 text-sm border border-[#00ff9f33] hover:bg-[#00ff9f11] rounded-2xl flex items-center justify-center gap-2 text-[#00ff9f]">
+                        <i class="fa-solid fa-copy"></i> COPY ALL LINKS
+                    </button>
                 </div>
             </div>
+        </div>
+        
+        <!-- FOOTER STATUS -->
+        <div class="mt-12 flex justify-between items-center text-xs text-slate-500 mono tracking-widest">
+            <div>CONNECTED TO THE GRID • <span class="text-emerald-400">SECURE</span></div>
+            <div>LAST SYNC: <span id="last-sync">JUST NOW</span></div>
+            <div>EXFLIX v2.077 • RENDER</div>
         </div>
     </div>
 
     <script>
-        // Same functions as before
+        // ==================== MATRIX RAIN ====================
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        
+        let matrixInterval;
+        let speed = 1;
+        
+        function resizeMatrix() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeMatrix);
+        resizeMatrix();
+        
+        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()[]{}<>|';
+        const fontSize = 15;
+        let columns = Math.floor(canvas.width / fontSize);
+        let drops = Array(columns).fill(1);
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#00ff9f';
+            ctx.font = fontSize + 'px VT323, monospace';
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                // occasional cyan
+                if (Math.random() > 0.92) {
+                    ctx.fillStyle = '#67e8f9';
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    ctx.fillStyle = '#00ff9f';
+                }
+                
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i] += speed;
+            }
+        }
+        
+        function startMatrix() {
+            if (matrixInterval) clearInterval(matrixInterval);
+            matrixInterval = setInterval(drawMatrix, 55);
+        }
+        startMatrix();
+        
+        // Click anywhere to "hack" (speed spike)
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'CANVAS' || e.target.id === 'matrix') {
+                speed = 3.5;
+                setTimeout(() => { speed = 1; }, 1200);
+            }
+        });
+        
+        // ==================== STATS ====================
         async function loadStats() {
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
-                document.getElementById('total').textContent = data.total;
-                document.getElementById('active').textContent = data.active;
+                document.getElementById('total').textContent = data.total || 0;
+                document.getElementById('active').textContent = data.active || 0;
+                
+                document.getElementById('last-sync').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
             } catch(e) {}
         }
-
-        async function validateCookie() { /* same logic as previous */ }
-        async function generateAccount() { /* same logic as previous */ }
-
-        setInterval(loadStats, 10000);
+        setInterval(loadStats, 12000);
         loadStats();
+        
+        // ==================== VALIDATE COOKIE ====================
+        async function validateCookie() {
+            const textarea = document.getElementById('cookie_text');
+            const resultDiv = document.getElementById('validate-result');
+            const cookie = textarea.value.trim();
+            
+            if (!cookie) {
+                resultDiv.innerHTML = `<div class="text-red-400 p-4 border border-red-500/50 rounded-2xl">No cookie data detected. Paste something first.</div>`;
+                return;
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="terminal rounded-2xl p-5 flex items-center gap-4 text-[#67e8f9]">
+                    <i class="fa-solid fa-spinner fa-spin text-xl"></i>
+                    <div>
+                        <div class="font-bold">ESTABLISHING CONNECTION...</div>
+                        <div class="text-xs text-slate-400">Validating against Netflix edge nodes</div>
+                    </div>
+                </div>`;
+            
+            try {
+                const res = await fetch('/api/add_account', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({cookie_text: cookie})
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="terminal border border-[#00ff9f] rounded-2xl p-6">
+                            <div class="flex items-center gap-3 text-[#00ff9f]">
+                                <i class="fa-solid fa-check-circle text-3xl"></i>
+                                <div>
+                                    <div class="font-bold text-xl">ACCESS GRANTED</div>
+                                    <div class="text-sm text-emerald-400">Cookie validated & injected into vault</div>
+                                </div>
+                            </div>
+                        </div>`;
+                    textarea.value = '';
+                    loadStats();
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="terminal border border-red-500 rounded-2xl p-6 text-red-400">
+                            <i class="fa-solid fa-exclamation-triangle mr-2"></i> 
+                            BREACH FAILED: ${data.error || 'Unknown error'}
+                        </div>`;
+                }
+            } catch(err) {
+                resultDiv.innerHTML = `<div class="text-red-400 p-4">Network error. The grid is unstable.</div>`;
+            }
+        }
+        
+        // ==================== GENERATE ACCOUNT ====================
+        async function generateAccount() {
+            const btnContainer = event.currentTarget;
+            const resultDiv = document.getElementById('link-selection');
+            
+            const originalText = event.target.innerHTML;
+            event.target.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-3"></i> BREACHING...`;
+            event.target.disabled = true;
+            
+            try {
+                const res = await fetch('/api/generate');
+                const data = await res.json();
+                
+                if (data.success) {
+                    document.getElementById('pc-link').href = data.pc_link;
+                    document.getElementById('mobile-link').href = data.mobile_link;
+                    document.getElementById('tv-link').href = data.tv_link;
+                    
+                    resultDiv.classList.remove('hidden');
+                    resultDiv.classList.add('animate-pulse');
+                    setTimeout(() => resultDiv.classList.remove('animate-pulse'), 800);
+                    
+                    loadStats();
+                } else {
+                    alert('ERROR: ' + (data.error || 'No active accounts available'));
+                }
+            } catch(e) {
+                alert('Connection to the matrix failed. Try again.');
+            } finally {
+                event.target.innerHTML = originalText;
+                event.target.disabled = false;
+            }
+        }
+        
+        function copyAllLinks() {
+            const links = [
+                document.getElementById('pc-link').href,
+                document.getElementById('mobile-link').href,
+                document.getElementById('tv-link').href
+            ].filter(l => l && l !== '#');
+            
+            if (links.length) {
+                navigator.clipboard.writeText(links.join('\n')).then(() => {
+                    const orig = event.target.innerHTML;
+                    event.target.innerHTML = `<i class="fa-solid fa-check"></i> COPIED`;
+                    setTimeout(() => { event.target.innerHTML = orig; }, 1800);
+                });
+            }
+        }
+        
+        // Boot animation
+        setTimeout(() => {
+            const header = document.querySelector('h1');
+            if (header) header.style.transition = 'all 0.6s ease';
+        }, 800);
     </script>
 </body>
 </html>
