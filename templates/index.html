@@ -20,10 +20,13 @@
         #log-content { height: 125px; overflow-y: auto; padding-right: 6px; }
         #log-content::-webkit-scrollbar { width: 4px; }
         #log-content::-webkit-scrollbar-thumb { background: #00ff9f33; border-radius: 2px; }
+        .particle { position: absolute; width: 4px; height: 4px; background: #00ff9f; border-radius: 50%; pointer-events: none; z-index: 60; animation: particleFade 1.1s forwards; }
+        @keyframes particleFade { to { opacity: 0; transform: scale(0); } }
     </style>
 </head>
 <body>
     <canvas id="matrix"></canvas>
+    
     <div id="intrusion-log" class="terminal hidden lg:block">
         <div class="text-xs text-red-400 mb-2 flex items-center gap-2 sticky top-0 bg-black/80 pb-1">INTRUSION LOGS • LIVE</div>
         <div id="log-content" class="mono text-xs"></div>
@@ -44,7 +47,6 @@
                 <a href="/admin" class="flex items-center gap-2 text-xs mono bg-black/70 px-5 py-2.5 rounded-2xl border border-[#00ff9f33] hover:border-[#00ff9f]">
                     <i class="fa-solid fa-user-shield"></i> ADMIN PANEL
                 </a>
-                <!-- Stats -->
                 <div class="flex gap-8 text-right">
                     <div><div class="text-xs tracking-widest text-[#00ff9f]">TOTAL IN VAULT</div><div id="total" class="text-6xl font-bold mono">0</div></div>
                     <div><div class="text-xs tracking-widest text-emerald-400">ACTIVE NODES</div><div id="active" class="text-6xl font-bold mono text-emerald-400">0</div></div>
@@ -52,7 +54,7 @@
             </div>
         </div>
 
-        <!-- CENTRAL NETFLIX GENERATOR WITH RICH DISPLAY -->
+        <!-- CENTRAL NETFLIX GENERATOR -->
         <div class="max-w-3xl mx-auto">
             <div class="glass rounded-3xl p-12 scanline neon-green text-center">
                 <i class="fa-solid fa-globe text-6xl text-[#00ff9f] mb-6"></i>
@@ -64,15 +66,7 @@
                 </button>
                 
                 <div id="generate-result" class="hidden mt-10">
-                    <div class="glass p-6 rounded-2xl mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <div class="text-emerald-400 font-bold" id="result-email">user@example.com</div>
-                            <div class="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full" id="result-plan">Premium</div>
-                        </div>
-                        <div class="text-xs text-slate-400">Country: <span id="result-country">US</span></div>
-                    </div>
-                    
-                    <div class="text-sm text-[#00ff9f] mb-4 tracking-widest">CHOOSE LOGIN METHOD</div>
+                    <div class="text-emerald-400 font-bold mb-4" id="result-email">Account Ready</div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <a id="pc-link" href="#" target="_blank" class="glass rounded-2xl p-8 hover:border-[#00ff9f]">PC LOGIN</a>
                         <a id="mobile-link" href="#" target="_blank" class="glass rounded-2xl p-8 hover:border-[#00ff9f]">MOBILE LOGIN</a>
@@ -84,21 +78,77 @@
     </div>
 
     <script>
-        // Matrix rain + particles (same as previous)
-        // ... (copy the full matrix + mouse + logs script from my last response)
-        
-        async function generateNetflixAccount() {
-            // ... (same generate logic)
-            const data = await res.json();
-            if (data.success) {
-                document.getElementById('result-email').textContent = data.email || 'Premium Account';
-                document.getElementById('result-plan').textContent = data.plan || 'Premium';
-                document.getElementById('result-country').textContent = data.country || 'US';
-                document.getElementById('pc-link').href = data.pc_link;
-                document.getElementById('mobile-link').href = data.mobile_link;
-                document.getElementById('tv-link').href = data.tv_link;
-                document.getElementById('generate-result').classList.remove('hidden');
+        // MATRIX RAIN + MOUSE + PARTICLES
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        let cols, drops = [], fontSize = 15, speed = 1.2;
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; cols = Math.floor(canvas.width / fontSize); drops = Array(cols).fill(1); }
+        window.addEventListener('resize', resize); resize();
+        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$';
+        function draw() {
+            ctx.fillStyle = 'rgba(2,6,23,0.09)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = '#00ff9f'; ctx.font = fontSize + 'px VT323';
+            for (let i = 0; i < drops.length; i++) {
+                ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i] += speed;
             }
+        }
+        setInterval(draw, 38);
+        
+        document.addEventListener('mousemove', (e) => {
+            for (let i = 0; i < 5; i++) {
+                const p = document.createElement('div'); p.className = 'particle';
+                p.style.left = (e.clientX + Math.random()*30 - 15) + 'px';
+                p.style.top = (e.clientY + Math.random()*30 - 15) + 'px';
+                document.body.appendChild(p); setTimeout(() => p.remove(), 1100);
+            }
+        });
+        
+        // INTRUSION LOGS
+        const logContainer = document.getElementById('log-content');
+        function addLog(msg) {
+            const line = document.createElement('div'); line.textContent = msg;
+            logContainer.appendChild(line); logContainer.scrollTop = logContainer.scrollHeight;
+            if (logContainer.children.length > 12) logContainer.removeChild(logContainer.children[0]);
+        }
+        const fakeLogs = ["[11:07] COOKIE INJECTED", "[11:08] SESSION GENERATED", "[11:09] MATRIX STABLE"];
+        fakeLogs.forEach((m,i) => setTimeout(() => addLog(m), i*300));
+        setInterval(() => addLog(fakeLogs[Math.floor(Math.random()*fakeLogs.length)]), 3500);
+        document.getElementById('intrusion-log').classList.remove('hidden');
+        
+        // STATS (auto refresh)
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('total').textContent = data.total || 0;
+                document.getElementById('active').textContent = data.active || 0;
+            } catch(e) {}
+        }
+        setInterval(loadStats, 8000);
+        loadStats();
+        
+        // GENERATOR
+        async function generateNetflixAccount() {
+            const result = document.getElementById('generate-result');
+            const btn = event.currentTarget;
+            const orig = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GENERATING...`;
+            try {
+                const res = await fetch('/api/generate');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('pc-link').href = data.pc_link;
+                    document.getElementById('mobile-link').href = data.mobile_link;
+                    document.getElementById('tv-link').href = data.tv_link;
+                    result.classList.remove('hidden');
+                    addLog("[LIVE] NEW SESSION GENERATED");
+                } else {
+                    alert(data.error || "No active cookies");
+                }
+            } catch(e) { alert("Generation failed"); }
+            finally { btn.innerHTML = orig; }
         }
     </script>
 </body>
