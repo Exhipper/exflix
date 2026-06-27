@@ -4,6 +4,8 @@ from psycopg2.extras import RealDictCursor
 import requests
 import os
 import re
+import random
+import time
 from urllib3.exceptions import InsecureRequestWarning
 import logging
 
@@ -30,19 +32,32 @@ def extract_netflix_id(cookie_text):
     return None
 
 def fetch_nftoken(cookie_text):
-    """Real Netflix NFToken generation"""
+    """Real Netflix NFToken generation (no hardcoded fallback)"""
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
         return None, "No NetflixId found"
 
+    # Strong headers to bypass rate limit/restrictions
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent": random.choice([
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0"
+        ]),
         "Cookie": f"NetflixId={netflix_id}",
-        "Accept": "application/json",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
         "Content-Type": "application/json",
+        "Origin": "https://www.netflix.com",
+        "Referer": "https://www.netflix.com/",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
     }
-    
+
     try:
+        # Real GraphQL (createAutoLoginToken)
         payload = {
             "operationName": "createAutoLoginToken",
             "variables": {},
@@ -53,7 +68,7 @@ def fetch_nftoken(cookie_text):
                 }
             }
         }
-        r = requests.post("https://www.netflix.com/api/shakti/mdx", json=payload, headers=headers, timeout=15, verify=False)
+        r = requests.post("https://www.netflix.com/api/shakti/mdx", json=payload, headers=headers, timeout=20, verify=False)
         
         token = None
         if r.status_code == 200:
@@ -62,9 +77,11 @@ def fetch_nftoken(cookie_text):
                 token = data.get('data', {}).get('createAutoLoginToken', {}).get('token')
             except:
                 pass
+        
         if token:
             return token, None
-        return None, f"Failed (Status {r.status_code})"
+        else:
+            return None, f"Failed to generate real nftoken (Status {r.status_code})"
     except Exception as e:
         logging.error(f"Error: {e}")
         return None, "Connection error"
@@ -139,7 +156,6 @@ def generate_account():
     try:
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        # Get all active accounts and try until success
         cur.execute("SELECT * FROM netflix_accounts WHERE is_active = TRUE")
         accounts = cur.fetchall()
         cur.close()
@@ -148,11 +164,11 @@ def generate_account():
         if not accounts:
             return jsonify({"success": False, "error": "No active accounts. Add fresh cookies in Admin Panel."}), 404
 
-        # Try accounts until we get a real token
+        # Try each account until we get a real Netflix-generated nftoken
         for account in accounts:
+            time.sleep(random.uniform(0.8, 2.5))  # Anti rate-limit delay
             token, error = fetch_nftoken(account['cookie_text'])
             if not error and token:
-                # Update usage
                 conn = get_db()
                 cur = conn.cursor()
                 cur.execute("""
