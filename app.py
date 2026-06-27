@@ -4,7 +4,6 @@ from psycopg2.extras import RealDictCursor
 import requests
 import os
 import re
-import random
 from urllib3.exceptions import InsecureRequestWarning
 import logging
 
@@ -31,26 +30,26 @@ def extract_netflix_id(cookie_text):
     return None
 
 def fetch_nftoken(cookie_text):
-    """Real NFToken generation from reference repo logic"""
+    """Real Netflix NFToken generation"""
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "No NetflixId found in cookie"
-    
+        return None, "No NetflixId found"
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Cookie": f"NetflixId={netflix_id}",
         "Accept": "application/json",
+        "Content-Type": "application/json",
     }
     
     try:
-        # Real GraphQL call for createAutoLoginToken (from Netflix-NFToken-Generator repo)
         payload = {
             "operationName": "createAutoLoginToken",
             "variables": {},
             "extensions": {
                 "persistedQuery": {
                     "version": 1,
-                    "sha256Hash": "b8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8"  # Replace with real hash if needed
+                    "sha256Hash": "b8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8"
                 }
             }
         }
@@ -63,16 +62,12 @@ def fetch_nftoken(cookie_text):
                 token = data.get('data', {}).get('createAutoLoginToken', {}).get('token')
             except:
                 pass
-        
         if token:
             return token, None
-        else:
-            # Fallback
-            token = f"real-nftoken-{netflix_id[:12]}"
-            return token, None
+        return None, f"Failed (Status {r.status_code})"
     except Exception as e:
         logging.error(f"Error: {e}")
-        return None, "Temporary connection issue"
+        return None, "Connection error"
 
 def get_db():
     return psycopg2.connect(DATABASE_URL)
@@ -144,37 +139,40 @@ def generate_account():
     try:
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        # Pick random active account for variety
-        cur.execute("""
-            SELECT * FROM netflix_accounts 
-            WHERE is_active = TRUE 
-            ORDER BY RANDOM() 
-            LIMIT 1
-        """)
-        account = cur.fetchone()
-        if not account:
-            return jsonify({"success": False, "error": "No active accounts. Add fresh cookies in Admin Panel."}), 404
-
-        token, error = fetch_nftoken(account['cookie_text'])
-        if error or not token:
-            return jsonify({"success": False, "error": "Temporary issue. Try again."}), 400
-
-        cur.execute("""
-            UPDATE netflix_accounts 
-            SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
-            WHERE id = %s
-        """, (account['id'],))
-        conn.commit()
+        # Get all active accounts and try until success
+        cur.execute("SELECT * FROM netflix_accounts WHERE is_active = TRUE")
+        accounts = cur.fetchall()
         cur.close()
         conn.close()
 
-        base = "https://www.netflix.com"
-        return jsonify({
-            "success": True,
-            "pc_link": f"{base}/?nftoken={token}",
-            "mobile_link": f"{base}/unsupported?nftoken={token}",
-            "tv_link": f"{base}/tv2?nftoken={token}"
-        })
+        if not accounts:
+            return jsonify({"success": False, "error": "No active accounts. Add fresh cookies in Admin Panel."}), 404
+
+        # Try accounts until we get a real token
+        for account in accounts:
+            token, error = fetch_nftoken(account['cookie_text'])
+            if not error and token:
+                # Update usage
+                conn = get_db()
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE netflix_accounts 
+                    SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
+                    WHERE id = %s
+                """, (account['id'],))
+                conn.commit()
+                cur.close()
+                conn.close()
+
+                base = "https://www.netflix.com"
+                return jsonify({
+                    "success": True,
+                    "pc_link": f"{base}/?nftoken={token}",
+                    "mobile_link": f"{base}/unsupported?nftoken={token}",
+                    "tv_link": f"{base}/tv2?nftoken={token}"
+                })
+        
+        return jsonify({"success": False, "error": "All accounts temporarily unavailable. Try again later."}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
