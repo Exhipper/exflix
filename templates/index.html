@@ -22,6 +22,11 @@
         #log-content::-webkit-scrollbar-thumb { background: #00ff9f33; border-radius: 2px; }
         .particle { position: absolute; width: 4px; height: 4px; background: #00ff9f; border-radius: 50%; pointer-events: none; z-index: 60; animation: particleFade 1.1s forwards; }
         @keyframes particleFade { to { opacity: 0; transform: scale(0); } }
+        
+        /* Real-time process animation */
+        .process-step {
+            transition: all 0.4s ease;
+        }
     </style>
 </head>
 <body>
@@ -66,10 +71,32 @@
                     <i class="fa-solid fa-rocket text-3xl"></i> GENERATE ACCOUNT
                 </button>
                 
-                <button onclick="generateNetflixAccount()" id="another-btn" 
+                <button onclick="generateNetflixAccount(true)" id="another-btn" 
                         class="hidden mt-4 w-full max-w-md mx-auto py-4 border border-[#00ff9f33] hover:bg-[#00ff9f11] text-[#00ff9f] rounded-2xl text-lg">
                     <i class="fa-solid fa-redo"></i> GENERATE ANOTHER
                 </button>
+                
+                <!-- REAL-TIME PROCESS ANIMATION -->
+                <div id="process-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+                    <div class="glass rounded-3xl p-10 max-w-md w-full text-center">
+                        <div class="text-[#00ff9f] text-2xl font-bold mb-8">BREACHING NETFLIX...</div>
+                        <div id="process-steps" class="space-y-6 text-left mono text-sm">
+                            <div id="step1" class="process-step flex items-center gap-3 text-emerald-400">
+                                <i class="fa-solid fa-check-circle"></i> Connecting to Netflix servers...
+                            </div>
+                            <div id="step2" class="process-step flex items-center gap-3 text-slate-400">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Extracting cookie session...
+                            </div>
+                            <div id="step3" class="process-step flex items-center gap-3 text-slate-400">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Generating NFToken...
+                            </div>
+                            <div id="step4" class="process-step flex items-center gap-3 text-slate-400">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Injecting into vault...
+                            </div>
+                        </div>
+                        <div class="mt-10 text-xs text-slate-400">This may take 3-8 seconds...</div>
+                    </div>
+                </div>
                 
                 <div id="generate-result" class="hidden mt-10">
                     <div class="text-emerald-400 font-bold mb-4" id="result-email">Account Ready</div>
@@ -84,7 +111,7 @@
     </div>
 
     <script>
-        // MATRIX RAIN + MOUSE + PARTICLES (max intensity)
+        // MATRIX RAIN + MOUSE + PARTICLES
         const canvas = document.getElementById('matrix');
         const ctx = canvas.getContext('2d');
         let cols, drops = [], fontSize = 15, speed = 1.2;
@@ -118,7 +145,7 @@
             logContainer.appendChild(line); logContainer.scrollTop = logContainer.scrollHeight;
             if (logContainer.children.length > 12) logContainer.removeChild(logContainer.children[0]);
         }
-        const fakeLogs = ["[11:32] SESSION GENERATED", "[11:33] COOKIE VALIDATED", "[11:34] MATRIX STABLE"];
+        const fakeLogs = ["[11:37] SESSION GENERATED", "[11:38] COOKIE VALIDATED", "[11:39] MATRIX STABLE"];
         fakeLogs.forEach((m,i) => setTimeout(() => addLog(m), i*300));
         setInterval(() => addLog(fakeLogs[Math.floor(Math.random()*fakeLogs.length)]), 3500);
         document.getElementById('intrusion-log').classList.remove('hidden');
@@ -135,7 +162,33 @@
         setInterval(loadStats, 8000);
         loadStats();
         
-        // GENERATOR + GENERATE ANOTHER
+        // REAL-TIME PROCESS ANIMATION
+        function startProcessAnimation() {
+            const modal = document.getElementById('process-modal');
+            modal.classList.remove('hidden');
+            
+            const steps = [
+                document.getElementById('step1'),
+                document.getElementById('step2'),
+                document.getElementById('step3'),
+                document.getElementById('step4')
+            ];
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < steps.length) {
+                    steps[i].classList.add('text-emerald-400');
+                    steps[i].querySelector('i').classList.remove('fa-spinner', 'fa-spin');
+                    steps[i].querySelector('i').classList.add('fa-check-circle');
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => modal.classList.add('hidden'), 800);
+                }
+            }, 900);
+        }
+        
+        // GENERATOR
         async function generateNetflixAccount(isAnother = false) {
             const result = document.getElementById('generate-result');
             const mainBtn = document.getElementById('main-generate-btn');
@@ -144,6 +197,8 @@
             const btn = isAnother ? anotherBtn : mainBtn;
             const orig = btn.innerHTML;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GENERATING...`;
+            
+            startProcessAnimation();  // Show real-time animation
             
             try {
                 const res = await fetch('/api/generate');
