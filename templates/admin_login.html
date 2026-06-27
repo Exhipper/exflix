@@ -3,87 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SECURE ACCESS • ADMIN PANEL</title>
+    <title>EXFLIX // ADMIN LOGIN</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; background: #020617; }
-        .header-font { font-family: 'Space Grotesk', sans-serif; }
-        .mono { font-family: 'VT323', monospace; }
-
-        .glass { 
-            background: rgba(15, 23, 42, 0.85); 
-            backdrop-filter: blur(20px); 
-            border: 1px solid rgba(236, 72, 153, 0.25); 
-        }
-        .neon-border { box-shadow: 0 0 25px #f472b6, 0 0 45px #db2777; }
-
-        .scanline::after {
-            content: '';
-            position: absolute;
-            top: -100%; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(transparent, rgba(236, 72, 153, 0.12), transparent);
-            animation: scan 4s linear infinite;
-        }
-
-        @keyframes scan {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(500%); }
-        }
+        body { background:#020617; color:#e0f2fe; font-family: 'VT323', monospace; }
+        .glass { background:rgba(15,23,42,0.9); border:1px solid #00ff9f33; }
     </style>
 </head>
-<body class="text-slate-200 min-h-screen flex items-center justify-center">
-    <div class="max-w-md w-full mx-auto px-6">
-        <div class="text-center mb-12">
-            <div class="inline-flex items-center gap-3 mb-6">
-                <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl flex items-center justify-center neon-border">
-                    <i class="fa-solid fa-shield-halved text-white text-4xl"></i>
-                </div>
+<body class="min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-md px-6">
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center gap-3 text-[#00ff9f]">
+                <i class="fa-solid fa-user-secret text-5xl"></i>
             </div>
-            <h1 class="header-font text-5xl font-bold tracking-tighter glow-pink">ADMIN ACCESS</h1>
-            <p class="text-slate-400 mono mt-2">AUTHORIZATION REQUIRED</p>
+            <h1 class="text-6xl font-bold tracking-[-2px] mt-4">ADMIN ACCESS</h1>
+            <p class="text-[#00ff9f] text-sm tracking-[4px]">AUTHORIZED PERSONNEL ONLY</p>
         </div>
-
-        <div class="glass rounded-3xl p-10 neon-border scanline">
-            <form method="POST" class="space-y-8">
-                <div>
-                    <label class="block text-xs tracking-widest text-slate-400 mb-2">USERNAME</label>
-                    <input type="text" name="username" required
-                           class="w-full bg-black/70 border border-slate-700 rounded-2xl px-6 py-5 focus:border-pink-500 outline-none mono">
+        
+        <div class="glass rounded-3xl p-10">
+            <form method="POST" action="/admin">
+                <div class="mb-6">
+                    <label class="block text-xs tracking-widest mb-2 text-[#00ff9f]">USERNAME</label>
+                    <input type="text" name="username" value="admin" class="w-full terminal bg-black/70 border border-[#00ff9f33] rounded-2xl px-6 py-4 text-xl focus:outline-none">
+                </div>
+                <div class="mb-8">
+                    <label class="block text-xs tracking-widest mb-2 text-[#00ff9f]">PASSWORD</label>
+                    <input type="password" name="password" class="w-full terminal bg-black/70 border border-[#00ff9f33] rounded-2xl px-6 py-4 text-xl focus:outline-none" placeholder="••••••••">
                 </div>
                 
-                <div>
-                    <label class="block text-xs tracking-widest text-slate-400 mb-2">PASSWORD</label>
-                    <input type="password" name="password" required
-                           class="w-full bg-black/70 border border-slate-700 rounded-2xl px-6 py-5 focus:border-pink-500 outline-none mono">
-                </div>
-
-                <button type="submit"
-                    class="w-full py-6 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 rounded-2xl font-bold text-xl transition-all active:scale-95">
+                {% if error %}
+                <div class="mb-6 text-red-400 text-sm border border-red-500/40 p-4 rounded-2xl">{{ error }}</div>
+                {% endif %}
+                
+                <button type="submit" 
+                    class="w-full py-6 bg-[#00ff9f] hover:bg-white text-black font-extrabold text-2xl rounded-2xl transition-all">
                     AUTHENTICATE
                 </button>
             </form>
-
-            {% if error %}
-            <div class="mt-6 p-4 bg-red-900/30 border border-red-500 rounded-2xl text-red-400 text-center">
-                {{ error }}
-            </div>
-            {% endif %}
         </div>
-
-        <div class="text-center text-xs text-slate-500 mt-10 mono">
-            SECURE ACCESS PROTOCOL v2.1 • AUTHORIZED PERSONNEL ONLY
-        </div>
+        <p class="text-center text-xs text-slate-500 mt-8 tracking-widest">EXFLIX SECURE TERMINAL • RENDER</p>
     </div>
-
-    <script>
-        // Optional: Add subtle animation on load
-        document.querySelector('form').classList.add('animate-pulse');
-        setTimeout(() => {
-            document.querySelector('form').classList.remove('animate-pulse');
-        }, 800);
-    </script>
 </body>
 </html>
