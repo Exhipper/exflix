@@ -19,7 +19,7 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Proxy lists from your URLs
+# Your proxy lists
 PROXY_URLS = [
     "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
     "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
@@ -27,7 +27,7 @@ PROXY_URLS = [
     "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/socks5/data.txt"
 ]
 
-def get_proxies():
+def load_and_validate_proxies():
     proxies = []
     for url in PROXY_URLS:
         try:
@@ -36,9 +36,25 @@ def get_proxies():
                 proxies.extend([p.strip() for p in r.text.splitlines() if p.strip()])
         except:
             pass
-    return list(set(proxies))  # unique
+    proxies = list(set(proxies))  # unique
+    working_proxies = []
+    test_url = "https://www.netflix.com"
+    for p in random.sample(proxies, min(20, len(proxies))):  # test 20 random
+        try:
+            proxies_dict = {"http": p, "https": p}
+            r = requests.get(test_url, proxies=proxies_dict, timeout=8)
+            if r.status_code in [200, 403, 429]:
+                working_proxies.append(p)
+                if len(working_proxies) >= 8:  # keep up to 8 working
+                    break
+        except:
+            pass
+    return working_proxies or [""]  # fallback no proxy
 
-PROXIES = get_proxies()
+WORKING_PROXIES = load_and_validate_proxies()
+
+def get_proxy():
+    return random.choice(WORKING_PROXIES)
 
 def extract_netflix_id(cookie_text):
     if not cookie_text:
@@ -57,7 +73,7 @@ def fetch_nftoken(cookie_text):
     if not netflix_id:
         return None, "No NetflixId found"
 
-    proxy = random.choice(PROXIES) if PROXIES else None
+    proxy = get_proxy()
     proxies_dict = {"http": proxy, "https": proxy} if proxy else None
 
     headers = {
@@ -71,7 +87,7 @@ def fetch_nftoken(cookie_text):
     }
 
     try:
-        time.sleep(random.uniform(0.5, 1.8))
+        time.sleep(random.uniform(0.8, 2.5))
         payload = {
             "operationName": "createAutoLoginToken",
             "variables": {},
@@ -180,27 +196,26 @@ def generate_account():
         for account in accounts:
             time.sleep(random.uniform(0.8, 2.5))
             token, proxy_used = fetch_nftoken(account['cookie_text'])
-            if not token:
-                continue  # try next account
-            conn = get_db()
-            cur = conn.cursor()
-            cur.execute("""
-                UPDATE netflix_accounts 
-                SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
-                WHERE id = %s
-            """, (account['id'],))
-            conn.commit()
-            cur.close()
-            conn.close()
+            if not error and token:  # fixed typo in previous
+                conn = get_db()
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE netflix_accounts 
+                    SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
+                    WHERE id = %s
+                """, (account['id'],))
+                conn.commit()
+                cur.close()
+                conn.close()
 
-            base = "https://www.netflix.com"
-            return jsonify({
-                "success": True,
-                "pc_link": f"{base}/?nftoken={token}",
-                "mobile_link": f"{base}/unsupported?nftoken={token}",
-                "tv_link": f"{base}/tv2?nftoken={token}",
-                "proxy_used": proxy_used or "No proxy"
-            })
+                base = "https://www.netflix.com"
+                return jsonify({
+                    "success": True,
+                    "pc_link": f"{base}/?nftoken={token}",
+                    "mobile_link": f"{base}/unsupported?nftoken={token}",
+                    "tv_link": f"{base}/tv2?nftoken={token}",
+                    "proxy_used": proxy_used or "Direct"
+                })
         
         return jsonify({"success": False, "error": "All accounts temporarily unavailable. Try again later."}), 400
     except Exception as e:
