@@ -19,7 +19,7 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Proxy lists (optional - can be slow on Render free tier)
+# Proxy lists (lightweight)
 PROXY_URLS = [
     "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
     "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
@@ -68,15 +68,8 @@ def extract_netflix_id(cookie_text):
 def fetch_nftoken(cookie_text):
     """
     Netflix nfToken generator.
-    IMPORTANT: The sha256Hash below is a placeholder and WILL NOT WORK long-term.
-    Netflix changes their persisted queries frequently.
-    
-    HOW TO UPDATE (do this when generation stops working):
-    1. Open https://www.netflix.com in a logged-in browser
-    2. DevTools → Network tab
-    3. Search for "createAutoLoginToken" or "shakti/mdx"
-    4. Find the request with "persistedQuery" → copy the real "sha256Hash" value
-    5. Paste it below and redeploy.
+    CRITICAL: Update the sha256Hash when it stops working.
+    How: Login to Netflix → DevTools → Network → search "createAutoLoginToken" or "mdx" → copy real sha256Hash.
     """
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
@@ -105,7 +98,7 @@ def fetch_nftoken(cookie_text):
             "extensions": {
                 "persistedQuery": {
                     "version": 1,
-                    "sha256Hash": "b8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8"  # ← REPLACE THIS
+                    "sha256Hash": "b8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8"  # ← UPDATE THIS
                 }
             }
         }
@@ -207,7 +200,6 @@ def generate_account():
     try:
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        # Prefer least recently used + least used accounts first
         cur.execute("""
             SELECT * FROM netflix_accounts 
             WHERE is_active = TRUE 
@@ -248,15 +240,33 @@ def generate_account():
                     "tv_link": f"{base}/?nftoken={token}"
                 })
 
-        # If we get here, all accounts failed
+        # All failed
         return jsonify({
             "success": False, 
-            "error": "All active cookies failed to generate a token. They are probably expired — re-validate or add new ones in /admin."
+            "error": "All active cookies failed to generate a token. They are probably expired — re-validate or add new ones."
         }), 500
 
     except Exception as e:
         logging.error(f"generate_account error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/stats")
+def get_stats():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT COUNT(*) as total, 
+                   COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active 
+            FROM netflix_accounts
+        """)
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return jsonify({"total": row[0], "active": row[1] or 0})
+    except Exception as e:
+        logging.error(f"Stats error: {e}")
+        return jsonify({"total": 0, "active": 0})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
