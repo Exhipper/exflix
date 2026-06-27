@@ -30,7 +30,7 @@ def extract_netflix_id(cookie_text):
     return None
 
 def fetch_nftoken(cookie_text):
-    """Always tries to generate fresh token + validates"""
+    """Re-evaluate every time - do not mark dead unless clearly expired"""
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
         return None, "No NetflixId found in cookie"
@@ -47,13 +47,12 @@ def fetch_nftoken(cookie_text):
             token = f"nftoken-{netflix_id[:12]}"
             return token, None
         
-        # Fallback check
         r2 = requests.get("https://www.netflix.com/login", headers=headers, timeout=15, verify=False)
         if r2.status_code == 200:
             token = f"nftoken-{netflix_id[:12]}"
             return token, None
             
-        return None, f"Temporary validation issue (Status {r.status_code})"
+        return None, f"Temporary validation issue (Status {r.status_code}) - cookie may still be alive"
     except Exception as e:
         logging.error(f"Error: {e}")
         return None, "Temporary connection issue"
@@ -138,11 +137,11 @@ def generate_account():
         if not account:
             return jsonify({"success": False, "error": "No active accounts. Add fresh cookies in Admin Panel."}), 404
 
-        # Always re-check the cookie fresh on every generate
+        # Always re-evaluate fresh on every generate
         token, error = fetch_nftoken(account['cookie_text'])
         if error or not token:
-            # IMPORTANT: Do NOT mark inactive here — cookie may still be alive
-            return jsonify({"success": False, "error": "Temporary issue with this account. Please try again in a moment or re-validate in Admin."}), 400
+            # Do NOT deactivate - user said cookies are still alive
+            return jsonify({"success": False, "error": "Temporary issue. Try again in a moment."}), 400
 
         cur.execute("""
             UPDATE netflix_accounts 
