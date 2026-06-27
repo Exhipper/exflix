@@ -19,37 +19,34 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Your proxy lists
+# Proxy lists (optional - can be slow on Render free tier)
 PROXY_URLS = [
     "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
     "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
-    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/socks4/data.txt",
-    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/socks5/data.txt"
 ]
 
 def load_and_validate_proxies():
     proxies = []
     for url in PROXY_URLS:
         try:
-            r = requests.get(url, timeout=10)
+            r = requests.get(url, timeout=8)
             if r.status_code == 200:
                 proxies.extend([p.strip() for p in r.text.splitlines() if p.strip()])
         except:
             pass
-    proxies = list(set(proxies))  # unique
-    working_proxies = []
+    proxies = list(set(proxies))
+    working = []
     test_url = "https://www.netflix.com"
-    for p in random.sample(proxies, min(20, len(proxies))):  # test 20 random
+    for p in random.sample(proxies, min(15, len(proxies))):
         try:
-            proxies_dict = {"http": p, "https": p}
-            r = requests.get(test_url, proxies=proxies_dict, timeout=8)
+            r = requests.get(test_url, proxies={"http": p, "https": p}, timeout=6)
             if r.status_code in [200, 403, 429]:
-                working_proxies.append(p)
-                if len(working_proxies) >= 8:  # keep up to 8 working
+                working.append(p)
+                if len(working) >= 6:
                     break
         except:
             pass
-    return working_proxies or [""]  # fallback no proxy
+    return working or [""]
 
 WORKING_PROXIES = load_and_validate_proxies()
 
@@ -69,9 +66,21 @@ def extract_netflix_id(cookie_text):
     return None
 
 def fetch_nftoken(cookie_text):
+    """
+    Netflix nfToken generator.
+    IMPORTANT: The sha256Hash below is a placeholder and WILL NOT WORK long-term.
+    Netflix changes their persisted queries frequently.
+    
+    HOW TO UPDATE (do this when generation stops working):
+    1. Open https://www.netflix.com in a logged-in browser
+    2. DevTools → Network tab
+    3. Search for "createAutoLoginToken" or "shakti/mdx"
+    4. Find the request with "persistedQuery" → copy the real "sha256Hash" value
+    5. Paste it below and redeploy.
+    """
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "No NetflixId found"
+        return None, "No NetflixId found in cookie"
 
     proxy = get_proxy()
     proxies_dict = {"http": proxy, "https": proxy} if proxy else None
@@ -84,22 +93,31 @@ def fetch_nftoken(cookie_text):
         "Cookie": f"NetflixId={netflix_id}",
         "Accept": "application/json",
         "Content-Type": "application/json",
+        "Origin": "https://www.netflix.com",
+        "Referer": "https://www.netflix.com/",
     }
 
     try:
-        time.sleep(random.uniform(0.8, 2.5))
+        time.sleep(random.uniform(0.6, 1.8))
         payload = {
             "operationName": "createAutoLoginToken",
             "variables": {},
             "extensions": {
                 "persistedQuery": {
                     "version": 1,
-                    "sha256Hash": "b8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8"
+                    "sha256Hash": "b8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8"  # ← REPLACE THIS
                 }
             }
         }
-        r = requests.post("https://www.netflix.com/api/shakti/mdx", json=payload, headers=headers, proxies=proxies_dict, timeout=20, verify=False)
-        
+        r = requests.post(
+            "https://www.netflix.com/api/shakti/mdx",
+            json=payload,
+            headers=headers,
+            proxies=proxies_dict,
+            timeout=25,
+            verify=False
+        )
+
         token = None
         if r.status_code == 200:
             try:
@@ -107,15 +125,18 @@ def fetch_nftoken(cookie_text):
                 token = data.get('data', {}).get('createAutoLoginToken', {}).get('token')
             except:
                 pass
+
         if token:
             return token, proxy
         else:
-            return None, f"Failed (Status {r.status_code})"
+            return None, f"Netflix rejected (status {r.status_code})"
     except Exception as e:
-        logging.error(f"Error: {e}")
-        return None, "Connection error"
+        logging.error(f"fetch_nftoken error: {e}")
+        return None, "Connection/proxy error"
 
 def get_db():
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL environment variable is not set")
     return psycopg2.connect(DATABASE_URL)
 
 def init_db():
@@ -159,11 +180,11 @@ def add_account():
         data = request.get_json(silent=True) or request.form.to_dict()
         cookie_text = (data.get("cookie_text") or "").strip()
         if not cookie_text:
-            return jsonify({"success": False, "error": "Cookie empty"}), 400
+            return jsonify({"success": False, "error": "Cookie is empty"}), 400
 
-        token, error = fetch_nftoken(cookie_text)
-        if error:
-            return jsonify({"success": False, "error": error}), 400
+        token, err = fetch_nftoken(cookie_text)
+        if err:
+            return jsonify({"success": False, "error": err}), 400
 
         conn = get_db()
         cur = conn.cursor()
@@ -176,8 +197,9 @@ def add_account():
         conn.commit()
         cur.close()
         conn.close()
-        return jsonify({"success": True, "message": "Account validated and added!"})
+        return jsonify({"success": True, "message": "Account validated and injected into vault!"})
     except Exception as e:
+        logging.error(f"add_account error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/generate")
@@ -185,18 +207,28 @@ def generate_account():
     try:
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM netflix_accounts WHERE is_active = TRUE")
+        # Prefer least recently used + least used accounts first
+        cur.execute("""
+            SELECT * FROM netflix_accounts 
+            WHERE is_active = TRUE 
+            ORDER BY last_used ASC NULLS FIRST, usage_count ASC 
+            LIMIT 12
+        """)
         accounts = cur.fetchall()
         cur.close()
         conn.close()
 
         if not accounts:
-            return jsonify({"success": False, "error": "No active accounts. Add fresh cookies in Admin Panel."}), 404
+            return jsonify({
+                "success": False, 
+                "error": "No active accounts in vault. Go to /admin and add fresh cookies."
+            }), 404
 
         for account in accounts:
-            time.sleep(random.uniform(0.8, 2.5))
+            time.sleep(random.uniform(0.7, 2.0))
             token, proxy_used = fetch_nftoken(account['cookie_text'])
-            if not error and token:  # fixed typo in previous
+            
+            if token:  # SUCCESS
                 conn = get_db()
                 cur = conn.cursor()
                 cur.execute("""
@@ -212,54 +244,20 @@ def generate_account():
                 return jsonify({
                     "success": True,
                     "pc_link": f"{base}/?nftoken={token}",
-                    "mobile_link": f"{base}/unsupported?nftoken={token}",
-                    "tv_link": f"{base}/tv2?nftoken={token}",
-                    "proxy_used": proxy_used or "Direct"
+                    "mobile_link": f"{base}/?nftoken={token}",
+                    "tv_link": f"{base}/?nftoken={token}"
                 })
-        
-        return jsonify({"success": False, "error": "All accounts temporarily unavailable. Try again later."}), 400
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/api/stats")
-def stats():
-    try:
-        conn = get_db()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT COUNT(*) as total, COUNT(CASE WHEN is_active=TRUE THEN 1 END) as active FROM netflix_accounts")
-        row = cur.fetchone()
-        cur.close()
-        conn.close()
-        return jsonify({"total": row["total"] or 0, "active": row["active"] or 0})
-    except:
-        return jsonify({"total": 0, "active": 0})
+        # If we get here, all accounts failed
+        return jsonify({
+            "success": False, 
+            "error": "All active cookies failed to generate a token. They are probably expired — re-validate or add new ones in /admin."
+        }), 500
 
-@app.route("/api/accounts")
-def list_accounts():
-    try:
-        conn = get_db()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT id, added_at, last_used, usage_count, is_active FROM netflix_accounts ORDER BY added_at DESC LIMIT 100")
-        accounts = cur.fetchall()
-        cur.close()
-        conn.close()
-        return jsonify({"success": True, "accounts": accounts})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route("/api/deactivate/<int:account_id>", methods=["POST"])
-def deactivate_account(account_id):
-    try:
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("UPDATE netflix_accounts SET is_active = FALSE WHERE id = %s", (account_id,))
-        conn.commit()
-        cur.close()
-        conn.close()
-        return jsonify({"success": True})
-    except Exception as e:
+        logging.error(f"generate_account error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False)
