@@ -32,12 +32,11 @@ def extract_netflix_id(cookie_text):
     return None
 
 def fetch_nftoken(cookie_text):
-    """Real Netflix NFToken generation (no hardcoded fallback)"""
+    """REAL Netflix NFToken generation ONLY (no hardcoded token)"""
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "No NetflixId found"
-
-    # Strong headers to bypass rate limit/restrictions
+        return None, "No NetflixId found in cookie"
+    
     headers = {
         "User-Agent": random.choice([
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
@@ -47,17 +46,13 @@ def fetch_nftoken(cookie_text):
         "Cookie": f"NetflixId={netflix_id}",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
         "Content-Type": "application/json",
         "Origin": "https://www.netflix.com",
         "Referer": "https://www.netflix.com/",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
     }
-
+    
     try:
-        # Real GraphQL (createAutoLoginToken)
+        time.sleep(random.uniform(0.8, 2.2))  # Rate limit bypass
         payload = {
             "operationName": "createAutoLoginToken",
             "variables": {},
@@ -81,7 +76,7 @@ def fetch_nftoken(cookie_text):
         if token:
             return token, None
         else:
-            return None, f"Failed to generate real nftoken (Status {r.status_code})"
+            return None, f"Netflix generation failed (Status {r.status_code})"
     except Exception as e:
         logging.error(f"Error: {e}")
         return None, "Connection error"
@@ -164,9 +159,8 @@ def generate_account():
         if not accounts:
             return jsonify({"success": False, "error": "No active accounts. Add fresh cookies in Admin Panel."}), 404
 
-        # Try each account until we get a real Netflix-generated nftoken
         for account in accounts:
-            time.sleep(random.uniform(0.8, 2.5))  # Anti rate-limit delay
+            time.sleep(random.uniform(0.8, 2.5))  # Bypass rate limit
             token, error = fetch_nftoken(account['cookie_text'])
             if not error and token:
                 conn = get_db()
