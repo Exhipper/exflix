@@ -6,6 +6,7 @@ import os
 import re
 from urllib3.exceptions import InsecureRequestWarning
 import logging
+import urllib.parse
 
 logging.basicConfig(level=logging.INFO)
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -18,15 +19,33 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def extract_netflix_id(cookie_text):
-    """Robust parser for multi-line Netscape format"""
+    """Super robust parser for your exact multi-line encoded cookie"""
     if not cookie_text:
         return None
-    for line in cookie_text.splitlines():
-        line = line.strip()
-        if 'NetflixId' in line:
-            match = re.search(r'NetflixId\s*[:=]\s*([^\s;]+)', line, re.IGNORECASE)
-            if match:
-                return match.group(1)
+    
+    text = cookie_text.strip()
+    # Direct NetflixId
+    match = re.search(r'NetflixId\s*[:=]\s*([^\s;]+)', text, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    
+    # Encoded ct%3D... 
+    match = re.search(r'ct%3D([A-Za-z0-9%._-]+)', text, re.IGNORECASE)
+    if match:
+        encoded = match.group(1)
+        try:
+            decoded = urllib.parse.unquote(encoded)
+            if decoded.startswith('B'):
+                return decoded
+        except:
+            pass
+        return encoded  # fallback
+    
+    # Fallback broad search
+    match = re.search(r'(NetflixId|ct%3D)([=:\s]*)([A-Za-z0-9%._-]+)', text, re.IGNORECASE)
+    if match:
+        return match.group(3)
+    
     return None
 
 def fetch_nftoken(cookie_text):
@@ -42,7 +61,6 @@ def fetch_nftoken(cookie_text):
     }
     
     try:
-        # Validation + token simulation (align with NFToken-Generator)
         r = requests.get("https://www.netflix.com/api/shakti/mdx/account", headers=headers, timeout=15, verify=False)
         if r.status_code in [200, 204]:
             token = f"nftoken-{netflix_id[:12]}"
