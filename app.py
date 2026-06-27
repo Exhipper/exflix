@@ -19,6 +19,27 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Proxy lists from your URLs
+PROXY_URLS = [
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/https/data.txt",
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/socks4/data.txt",
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/socks5/data.txt"
+]
+
+def get_proxies():
+    proxies = []
+    for url in PROXY_URLS:
+        try:
+            r = requests.get(url, timeout=10)
+            if r.status_code == 200:
+                proxies.extend([p.strip() for p in r.text.splitlines() if p.strip()])
+        except:
+            pass
+    return list(set(proxies))  # unique
+
+PROXIES = get_proxies()
+
 def extract_netflix_id(cookie_text):
     if not cookie_text:
         return None
@@ -32,27 +53,25 @@ def extract_netflix_id(cookie_text):
     return None
 
 def fetch_nftoken(cookie_text):
-    """REAL Netflix NFToken generation ONLY (no hardcoded token)"""
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "No NetflixId found in cookie"
-    
+        return None, "No NetflixId found"
+
+    proxy = random.choice(PROXIES) if PROXIES else None
+    proxies_dict = {"http": proxy, "https": proxy} if proxy else None
+
     headers = {
         "User-Agent": random.choice([
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0"
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
         ]),
         "Cookie": f"NetflixId={netflix_id}",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "application/json",
         "Content-Type": "application/json",
-        "Origin": "https://www.netflix.com",
-        "Referer": "https://www.netflix.com/",
     }
-    
+
     try:
-        time.sleep(random.uniform(0.8, 2.2))  # Rate limit bypass
+        time.sleep(random.uniform(0.5, 1.8))
         payload = {
             "operationName": "createAutoLoginToken",
             "variables": {},
@@ -63,7 +82,7 @@ def fetch_nftoken(cookie_text):
                 }
             }
         }
-        r = requests.post("https://www.netflix.com/api/shakti/mdx", json=payload, headers=headers, timeout=20, verify=False)
+        r = requests.post("https://www.netflix.com/api/shakti/mdx", json=payload, headers=headers, proxies=proxies_dict, timeout=20, verify=False)
         
         token = None
         if r.status_code == 200:
@@ -72,11 +91,10 @@ def fetch_nftoken(cookie_text):
                 token = data.get('data', {}).get('createAutoLoginToken', {}).get('token')
             except:
                 pass
-        
         if token:
-            return token, None
+            return token, proxy
         else:
-            return None, f"Netflix generation failed (Status {r.status_code})"
+            return None, f"Failed (Status {r.status_code})"
     except Exception as e:
         logging.error(f"Error: {e}")
         return None, "Connection error"
@@ -160,27 +178,29 @@ def generate_account():
             return jsonify({"success": False, "error": "No active accounts. Add fresh cookies in Admin Panel."}), 404
 
         for account in accounts:
-            time.sleep(random.uniform(0.8, 2.5))  # Bypass rate limit
-            token, error = fetch_nftoken(account['cookie_text'])
-            if not error and token:
-                conn = get_db()
-                cur = conn.cursor()
-                cur.execute("""
-                    UPDATE netflix_accounts 
-                    SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
-                    WHERE id = %s
-                """, (account['id'],))
-                conn.commit()
-                cur.close()
-                conn.close()
+            time.sleep(random.uniform(0.8, 2.5))
+            token, proxy_used = fetch_nftoken(account['cookie_text'])
+            if not token:
+                continue  # try next account
+            conn = get_db()
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE netflix_accounts 
+                SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
+                WHERE id = %s
+            """, (account['id'],))
+            conn.commit()
+            cur.close()
+            conn.close()
 
-                base = "https://www.netflix.com"
-                return jsonify({
-                    "success": True,
-                    "pc_link": f"{base}/?nftoken={token}",
-                    "mobile_link": f"{base}/unsupported?nftoken={token}",
-                    "tv_link": f"{base}/tv2?nftoken={token}"
-                })
+            base = "https://www.netflix.com"
+            return jsonify({
+                "success": True,
+                "pc_link": f"{base}/?nftoken={token}",
+                "mobile_link": f"{base}/unsupported?nftoken={token}",
+                "tv_link": f"{base}/tv2?nftoken={token}",
+                "proxy_used": proxy_used or "No proxy"
+            })
         
         return jsonify({"success": False, "error": "All accounts temporarily unavailable. Try again later."}), 400
     except Exception as e:
