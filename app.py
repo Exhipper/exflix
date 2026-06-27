@@ -35,29 +35,16 @@ def fetch_nftoken(cookie_text):
         return None, "No NetflixId found in cookie"
     
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Cookie": f"NetflixId={netflix_id}",
-        "Referer": "https://www.netflix.com/",
-        "Sec-Fetch-Mode": "navigate",
+        "Accept": "application/json",
     }
     
     try:
-        # Primary validation
-        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", headers=headers, timeout=20, verify=False)
-        print(f"Validation Status: {r.status_code}")
-        
+        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", headers=headers, timeout=15, verify=False)
         if r.status_code in [200, 204]:
-            token = f"nftoken-{netflix_id[:12]}"
+            token = "Bgi8u+vcAxL+AckGJFq2d2lMF1UVeV5agVJLv027/c0tN2HwxhaoB2Rh4FwHj1bJSCaKdStUH2063m/FkcDqeQ3Zt6oce6YfGSsi/WCSzkbPCepsWlGwEFaTaDaAx5ckQrPDOiIWgn1eUT9BD/MlRtVXYDFag3gshZgA8ovMFbVyAjteHMYbBiJleLeaSWrAJo0u4O9Ey0eSnXo4acE+eMRrpo0hJ7rG5JaK/x1hzh096fIK1NEdfcRcwo2Oo+hvHr2BkMUk0am6jvZpu406GFIw1329bHpuUMtr6+QNH0K5Yi55oAxCyp13F7HhUJ5nU/lRXcCapTg7Qh93Khv6/lLETo7K9ojNGAYiDgoMDZ5amwSF3IQ19GYN"  # Use real token or generate from your cookie
             return token, None
-        
-        # Fallback to login page
-        r2 = requests.get("https://www.netflix.com/login", headers=headers, timeout=15, verify=False)
-        if r2.status_code == 200:
-            token = f"nftoken-{netflix_id[:12]}"
-            return token, None
-        
         return None, f"Validation failed (Status {r.status_code})"
     except Exception as e:
         logging.error(f"Error: {e}")
@@ -163,7 +150,7 @@ def generate_account():
             "success": True,
             "pc_link": f"{base}/?nftoken={token}",
             "mobile_link": f"{base}/unsupported?nftoken={token}",
-            "tv_link": f"{base}/?nftoken={token}"
+            "tv_link": f"{base}/tv2?nftoken={token}"
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -181,7 +168,6 @@ def stats():
     except:
         return jsonify({"total": 0, "active": 0})
 
-# Account management
 @app.route("/api/accounts")
 def list_accounts():
     try:
