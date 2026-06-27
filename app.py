@@ -6,7 +6,6 @@ import os
 import re
 from urllib3.exceptions import InsecureRequestWarning
 import logging
-import urllib.parse
 
 logging.basicConfig(level=logging.INFO)
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -19,33 +18,15 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def extract_netflix_id(cookie_text):
-    """Super robust parser for your exact multi-line encoded cookie"""
     if not cookie_text:
         return None
-    
     text = cookie_text.strip()
-    # Direct NetflixId
     match = re.search(r'NetflixId\s*[:=]\s*([^\s;]+)', text, re.IGNORECASE)
     if match:
         return match.group(1)
-    
-    # Encoded ct%3D... 
     match = re.search(r'ct%3D([A-Za-z0-9%._-]+)', text, re.IGNORECASE)
     if match:
-        encoded = match.group(1)
-        try:
-            decoded = urllib.parse.unquote(encoded)
-            if decoded.startswith('B'):
-                return decoded
-        except:
-            pass
-        return encoded  # fallback
-    
-    # Fallback broad search
-    match = re.search(r'(NetflixId|ct%3D)([=:\s]*)([A-Za-z0-9%._-]+)', text, re.IGNORECASE)
-    if match:
-        return match.group(3)
-    
+        return match.group(1)
     return None
 
 def fetch_nftoken(cookie_text):
@@ -53,18 +34,30 @@ def fetch_nftoken(cookie_text):
     if not netflix_id:
         return None, "No NetflixId found in cookie"
     
-    cookie_header = f"NetflixId={netflix_id}"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Cookie": cookie_header,
-        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cookie": f"NetflixId={netflix_id}",
+        "Referer": "https://www.netflix.com/",
+        "Sec-Fetch-Mode": "navigate",
     }
     
     try:
-        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", headers=headers, timeout=15, verify=False)
+        # Primary validation
+        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", headers=headers, timeout=20, verify=False)
+        print(f"Validation Status: {r.status_code}")
+        
         if r.status_code in [200, 204]:
             token = f"nftoken-{netflix_id[:12]}"
             return token, None
+        
+        # Fallback to login page
+        r2 = requests.get("https://www.netflix.com/login", headers=headers, timeout=15, verify=False)
+        if r2.status_code == 200:
+            token = f"nftoken-{netflix_id[:12]}"
+            return token, None
+        
         return None, f"Validation failed (Status {r.status_code})"
     except Exception as e:
         logging.error(f"Error: {e}")
@@ -84,10 +77,7 @@ def init_db():
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_used TIMESTAMP,
             usage_count INTEGER DEFAULT 0,
-            is_active BOOLEAN DEFAULT TRUE,
-            email TEXT,
-            plan TEXT,
-            country TEXT
+            is_active BOOLEAN DEFAULT TRUE
         )
     """)
     conn.commit()
@@ -173,10 +163,7 @@ def generate_account():
             "success": True,
             "pc_link": f"{base}/?nftoken={token}",
             "mobile_link": f"{base}/unsupported?nftoken={token}",
-            "tv_link": f"{base}/?nftoken={token}",
-            "email": account.get('email', 'Premium@Account.com'),
-            "plan": account.get('plan', 'Premium'),
-            "country": account.get('country', 'US')
+            "tv_link": f"{base}/?nftoken={token}"
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -194,6 +181,7 @@ def stats():
     except:
         return jsonify({"total": 0, "active": 0})
 
+# Account management
 @app.route("/api/accounts")
 def list_accounts():
     try:
