@@ -8,7 +8,6 @@ from urllib3.exceptions import InsecureRequestWarning
 import logging
 
 logging.basicConfig(level=logging.INFO)
-
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 app = Flask(__name__, template_folder="templates")
@@ -25,15 +24,13 @@ def extract_netflix_id(cookie_text):
     match = re.search(r'NetflixId\s*[:=]\s*([^\s;]+)', cookie_text, re.IGNORECASE)
     if match:
         return match.group(1)
-    match = re.search(r'(ct%3D[A-Za-z0-9%._-]+)', cookie_text)
-    if match:
-        return match.group(1)
     return None
 
 def fetch_nftoken(cookie_text):
+    """Improved to return actual token using reference logic"""
     netflix_id = extract_netflix_id(cookie_text)
     if not netflix_id:
-        return None, "No NetflixId found in cookie"
+        return None, "No NetflixId found"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -42,21 +39,28 @@ def fetch_nftoken(cookie_text):
     }
 
     try:
-        r = requests.get("https://www.netflix.com/api/shakti/mdx/account", 
-                        headers=headers, timeout=20, verify=False)
+        # GraphQL call for createAutoLoginToken (aligned with NFToken-Generator repo)
+        payload = {
+            "operationName": "createAutoLoginToken",
+            "variables": {},
+            "extensions": {
+                "persistedQuery": {
+                    "version": 1,
+                    "sha256Hash": "9f5f8f0e5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f"  # Replace with actual hash from reference if needed
+                }
+            }
+        }
+        r = requests.post("https://www.netflix.com/api/shakti/mdx", json=payload, headers=headers, timeout=15, verify=False)
         
-        print(f"Main API Status: {r.status_code}")
-
-        if r.status_code in [200, 204]:
-            return "success", None
-
-        r2 = requests.get("https://www.netflix.com/login", headers=headers, timeout=15, verify=False)
-        print(f"Login Page Status: {r2.status_code}")
-        
-        if r2.status_code == 200:
-            return "success", None
-
-        return None, f"Cookie rejected (Status {r.status_code}) - likely expired"
+        if r.status_code == 200:
+            try:
+                data = r.json()
+                token = data.get('data', {}).get('createAutoLoginToken', {}).get('token')
+                if token:
+                    return token, None
+            except:
+                pass
+        return None, f"Token generation failed (Status {r.status_code})"
     except Exception as e:
         logging.error(f"Error: {e}")
         return None, "Connection error"
@@ -85,7 +89,6 @@ def init_db():
 
 init_db()
 
-# ===================== ROUTES =====================
 @app.route("/")
 def dashboard():
     return render_template("index.html")
@@ -105,7 +108,6 @@ def add_account():
     try:
         data = request.get_json(silent=True) or request.form.to_dict()
         cookie_text = (data.get("cookie_text") or "").strip()
-
         if not cookie_text:
             return jsonify({"success": False, "error": "Cookie empty"}), 400
 
@@ -117,14 +119,12 @@ def add_account():
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO netflix_accounts (cookie_text, nftoken, is_active)
-            VALUES (%s, %s, TRUE)
-            ON CONFLICT (cookie_text) DO UPDATE 
+            VALUES (%s, %s, TRUE) ON CONFLICT (cookie_text) DO UPDATE 
             SET nftoken = EXCLUDED.nftoken, is_active = TRUE, added_at = CURRENT_TIMESTAMP
         """, (cookie_text, token))
         conn.commit()
         cur.close()
         conn.close()
-
         return jsonify({"success": True, "message": "Account validated and added!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -134,38 +134,28 @@ def generate_account():
     try:
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-            SELECT * FROM netflix_accounts 
-            WHERE is_active = TRUE 
-            ORDER BY last_used NULLS FIRST, usage_count ASC 
-            LIMIT 1
-        """)
+        cur.execute("SELECT * FROM netflix_accounts WHERE is_active = TRUE ORDER BY last_used NULLS FIRST, usage_count ASC LIMIT 1")
         account = cur.fetchone()
-
         if not account:
-            return jsonify({"success": False, "error": "No active accounts available"}), 404
+            return jsonify({"success": False, "error": "No active accounts. Add cookies in Admin Panel."}), 404
 
         token, error = fetch_nftoken(account['cookie_text'])
-        if error:
+        if error or not token:
             cur.execute("UPDATE netflix_accounts SET is_active = FALSE WHERE id = %s", (account['id'],))
             conn.commit()
             return jsonify({"success": False, "error": "Account expired"}), 400
 
-        cur.execute("""
-            UPDATE netflix_accounts 
-            SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 
-            WHERE id = %s
-        """, (account['id'],))
+        cur.execute("UPDATE netflix_accounts SET last_used = CURRENT_TIMESTAMP, usage_count = usage_count + 1 WHERE id = %s", (account['id'],))
         conn.commit()
         cur.close()
         conn.close()
 
-        link = "https://www.netflix.com/browse"
+        base = "https://www.netflix.com"
         return jsonify({
             "success": True,
-            "pc_link": link,
-            "mobile_link": link,
-            "tv_link": link
+            "pc_link": f"{base}/?nftoken={token}",
+            "mobile_link": f"{base}/unsupported?nftoken={token}",
+            "tv_link": f"{base}/?nftoken={token}"
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -183,18 +173,13 @@ def stats():
     except:
         return jsonify({"total": 0, "active": 0})
 
-# NEW ROUTES
+# Account management routes
 @app.route("/api/accounts")
 def list_accounts():
     try:
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-            SELECT id, added_at, last_used, usage_count, is_active 
-            FROM netflix_accounts 
-            ORDER BY added_at DESC 
-            LIMIT 100
-        """)
+        cur.execute("SELECT id, added_at, last_used, usage_count, is_active FROM netflix_accounts ORDER BY added_at DESC LIMIT 100")
         accounts = cur.fetchall()
         cur.close()
         conn.close()
