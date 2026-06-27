@@ -3,90 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COOKIE VAULT • VALIDATOR</title>
+    <title>EXFLIX // ADMIN TERMINAL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; background: #020617; }
-        .header-font { font-family: 'Space Grotesk', sans-serif; }
-
-        .glass { 
-            background: rgba(15, 23, 42, 0.85); 
-            backdrop-filter: blur(20px); 
-            border: 1px solid rgba(103, 232, 249, 0.3); 
-        }
-        .neon-cyan { 
-            box-shadow: 0 0 20px #67e8f9, 
-                        0 0 35px #22d3ee; 
-        }
+        /* same styles as index.html - copy the entire <style> block from above for consistency */
+        body { font-family: 'Inter', system_ui, sans-serif; background: #020617; color: #e0f2fe; }
+        .header-font { font-family: 'Space Grotesk', 'VT323', sans-serif; }
+        .mono { font-family: 'VT323', 'Courier New', monospace; }
+        #matrix { position: fixed; top:0; left:0; z-index:-1; opacity:0.5; }
+        .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(24px); border: 1px solid rgba(103,232,249,0.3); }
+        .neon-green { box-shadow: 0 0 15px #00ff9f, 0 0 35px #00ff9f; }
+        .scanline::after { content:''; position:absolute; inset:0; background:linear-gradient(transparent 50%, rgba(0,255,159,0.07) 50%); background-size:100% 5px; animation:scan 3.5s linear infinite; pointer-events:none; }
+        @keyframes scan { 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
+        .terminal { font-family:'VT323', monospace; background:rgba(0,0,0,0.65); border:1px solid #00ff9f33; }
+        table { border-collapse: separate; border-spacing: 0 4px; }
+        th, td { padding: 14px 16px; }
+        .account-row { transition: background 0.1s ease; }
+        .account-row:hover { background: rgba(0,255,159,0.06); }
     </style>
 </head>
-<body class="text-slate-200 min-h-screen">
-    <div class="max-w-3xl mx-auto px-6 py-12">
-        <div class="flex items-center gap-4 mb-12">
-            <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-3xl flex items-center justify-center neon-cyan">
-                <i class="fa-solid fa-microchip text-white text-3xl"></i>
-            </div>
-            <h1 class="header-font text-5xl font-bold tracking-tighter">COOKIE VALIDATOR</h1>
-        </div>
-
-        <div class="glass rounded-3xl p-10 neon-cyan">
-            <form id="addForm">
-                <div class="mb-6">
-                    <label class="block text-xs tracking-widest text-cyan-400 mb-3">INSERT COOKIE DATA</label>
-                    <textarea id="cookie_text" rows="10" 
-                        class="w-full bg-black/80 border border-slate-700 rounded-2xl p-6 font-mono text-sm focus:border-cyan-400"
-                        placeholder="Paste NetflixId=... or full Netscape/JSON format here..."></textarea>
+<body>
+    <canvas id="matrix"></canvas>
+    
+    <div class="max-w-6xl mx-auto px-6 py-10 relative z-10">
+        <div class="flex items-center justify-between mb-10">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-black border border-[#00ff9f] rounded-2xl flex items-center justify-center neon-green">
+                    <i class="fa-solid fa-user-secret text-[#00ff9f] text-3xl"></i>
                 </div>
-
-                <button type="submit"
-                    class="w-full py-7 bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-bold rounded-2xl text-xl hover:brightness-110 transition-all">
-                    INITIATE VERIFICATION
+                <div>
+                    <h1 class="header-font text-5xl font-bold tracking-[-2px]">ADMIN TERMINAL</h1>
+                    <p class="text-[#00ff9f] text-sm tracking-[3px] mono">EXFLIX VAULT CONTROL</p>
+                </div>
+            </div>
+            <a href="/" class="px-6 py-3 border border-[#00ff9f33] hover:bg-[#00ff9f11] rounded-2xl text-sm flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> BACK TO DASHBOARD
+            </a>
+        </div>
+        
+        <!-- ADD NEW COOKIE -->
+        <div class="glass rounded-3xl p-9 scanline mb-10 neon-green">
+            <h2 class="text-2xl font-semibold mb-6 flex items-center gap-3">
+                <i class="fa-solid fa-plus text-[#00ff9f]"></i> INJECT NEW ACCOUNT
+            </h2>
+            <form id="addForm">
+                <textarea id="cookie_text" rows="9" class="terminal w-full rounded-2xl p-7 font-mono text-sm focus:outline-none" 
+                    placeholder="Paste full Netflix cookie (NetflixId=... or Netscape format)"></textarea>
+                <button type="submit" 
+                    class="mt-5 w-full py-6 bg-[#00ff9f] hover:bg-white text-black font-extrabold text-xl rounded-2xl transition-all">
+                    VALIDATE &amp; INJECT TO VAULT
                 </button>
             </form>
-
-            <div id="result" class="mt-8 min-h-[140px]"></div>
+            <div id="result" class="mt-6"></div>
+        </div>
+        
+        <!-- VAULT INVENTORY -->
+        <div class="glass rounded-3xl p-9">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-semibold flex items-center gap-3">
+                    <i class="fa-solid fa-database text-[#67e8f9]"></i> VAULT INVENTORY
+                </h2>
+                <div class="flex gap-3">
+                    <input id="search" type="text" placeholder="Search accounts..." 
+                           class="terminal px-5 py-2 rounded-2xl text-sm w-72 focus:outline-none" onkeyup="filterTable()">
+                    <button onclick="loadAccounts()" 
+                        class="px-6 py-2 border border-[#00ff9f33] hover:bg-[#00ff9f11] rounded-2xl text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-sync"></i> REFRESH
+                    </button>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-[#00ff9f] text-xs tracking-widest">
+                            <th>ID</th>
+                            <th>ADDED</th>
+                            <th>LAST USED</th>
+                            <th>USES</th>
+                            <th>STATUS</th>
+                            <th class="text-right">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accounts-table" class="text-slate-300"></tbody>
+                </table>
+            </div>
+            <div id="empty-state" class="hidden text-center py-12 text-slate-400">
+                <i class="fa-solid fa-folder-open text-4xl mb-4"></i>
+                <p>Vault is empty. Inject some cookies above.</p>
+            </div>
         </div>
     </div>
-
+    
     <script>
+        // MATRIX RAIN (same as index)
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+        
+        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$';
+        let drops = Array(Math.floor(canvas.width / 16)).fill(1);
+        
+        setInterval(() => {
+            ctx.fillStyle = 'rgba(2,6,23,0.1)';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = '#00ff9f';
+            ctx.font = '15px VT323';
+            for (let i=0; i<drops.length; i++) {
+                ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*16, drops[i]*16);
+                if (drops[i]*16 > canvas.height && Math.random() > 0.97) drops[i] = 0;
+                drops[i]++;
+            }
+        }, 60);
+        
+        // Add account
         document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const cookie = document.getElementById('cookie_text').value.trim();
-            const resultDiv = document.getElementById('result');
-
-            resultDiv.innerHTML = `
-                <div class="glass rounded-2xl p-8 border border-cyan-400">
-                    <div class="flex items-center gap-4 text-cyan-400">
-                        <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>Validating with Netflix servers...</span>
-                    </div>
-                </div>`;
-
+            const result = document.getElementById('result');
+            
+            result.innerHTML = `<div class="terminal p-6 flex items-center gap-4"><i class="fa-solid fa-spinner fa-spin"></i> VALIDATING WITH NETFLIX...</div>`;
+            
             try {
                 const res = await fetch('/api/add_account', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    method:'POST', headers:{'Content-Type':'application/json'},
                     body: JSON.stringify({cookie_text: cookie})
                 });
                 const data = await res.json();
-
+                
                 if (data.success) {
-                    resultDiv.innerHTML = `
-                        <div class="glass rounded-2xl p-8 border border-emerald-400 bg-emerald-900/30">
-                            <i class="fa-solid fa-circle-check text-4xl text-emerald-400 mb-4"></i>
-                            <div class="text-2xl font-bold text-emerald-400">VALIDATION SUCCESSFUL</div>
-                            <p class="text-slate-300 mt-2">${data.message || 'Account successfully added to vault.'}</p>
-                        </div>`;
+                    result.innerHTML = `<div class="terminal border border-emerald-400 p-6 text-emerald-400">✓ INJECTED SUCCESSFULLY</div>`;
+                    document.getElementById('cookie_text').value = '';
+                    loadAccounts();
                 } else {
-                    resultDiv.innerHTML = `<div class="text-red-400 p-6 border border-red-500 rounded-2xl">❌ ${data.error}</div>`;
+                    result.innerHTML = `<div class="terminal border border-red-500 p-6 text-red-400">✗ ${data.error}</div>`;
                 }
-            } catch (err) {
-                resultDiv.innerHTML = `<div class="text-red-400 p-6">Network Error. Please try again.</div>`;
+            } catch(err) {
+                result.innerHTML = `<div class="terminal border border-red-500 p-6">Network error</div>`;
             }
         });
+        
+        // Load accounts
+        async function loadAccounts() {
+            const tbody = document.getElementById('accounts-table');
+            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center"><i class="fa-solid fa-spinner fa-spin"></i> LOADING VAULT...</td></tr>`;
+            
+            try {
+                const res = await fetch('/api/accounts');
+                const data = await res.json();
+                
+                if (!data.success || !data.accounts.length) {
+                    tbody.innerHTML = '';
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('empty-state').classList.add('hidden');
+                
+                tbody.innerHTML = '';
+                data.accounts.forEach(acc => {
+                    const row = document.createElement('tr');
+                    row.className = 'account-row border-b border-white/10';
+                    const status = acc.is_active ? 
+                        `<span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">ACTIVE</span>` : 
+                        `<span class="px-3 py-1 bg-red-500/20 text-red-400 rounded text-xs">DEACTIVATED</span>`;
+                    
+                    row.innerHTML = `
+                        <td class="font-mono text-[#67e8f9]">${acc.id}</td>
+                        <td class="text-xs">${new Date(acc.added_at).toLocaleDateString()}</td>
+                        <td class="text-xs">${acc.last_used ? new Date(acc.last_used).toLocaleDateString() : '—'}</td>
+                        <td><span class="font-mono">${acc.usage_count}</span></td>
+                        <td>${status}</td>
+                        <td class="text-right">
+                            ${acc.is_active ? 
+                                `<button onclick="deactivateAccount(${acc.id}, this)" class="text-xs px-4 py-1.5 border border-red-400/60 hover:bg-red-500/10 text-red-400 rounded-xl">DEACTIVATE</button>` : 
+                                `<span class="text-xs text-slate-500">—</span>`}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-red-400">Failed to load vault</td></tr>`;
+            }
+        }
+        
+        async function deactivateAccount(id, btn) {
+            if (!confirm('Deactivate this account?')) return;
+            btn.innerHTML = 'DEACTIVATING...';
+            btn.disabled = true;
+            
+            await fetch(`/api/deactivate/${id}`, {method: 'POST'});
+            loadAccounts();
+        }
+        
+        function filterTable() {
+            const term = document.getElementById('search').value.toLowerCase();
+            document.querySelectorAll('#accounts-table tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+            });
+        }
+        
+        // Boot
+        window.onload = () => {
+            loadAccounts();
+            // optional: auto refresh every 30s
+            setInterval(loadAccounts, 30000);
+        };
     </script>
 </body>
 </html>
